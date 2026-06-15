@@ -1,0 +1,1604 @@
+Binary files ./CompCert/.lia.cache and ./cascompcert/.lia.cache differ
+Binary files ./CompCert/.nra.cache and ./cascompcert/.nra.cache differ
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/COMPCOMP_LICENSE ./cascompcert/COMPCOMP_LICENSE
+--- ./CompCert/COMPCOMP_LICENSE	1969-12-31 18:00:00.000000000 -0600
++++ ./cascompcert/COMPCOMP_LICENSE	2019-04-24 10:59:44.000000000 -0500
+@@ -0,0 +1,31 @@
++License for Compositional CompCert
++
++1.  The "core", and "linking" subdirectories are Copyright (c) 2013-2014 by
++Andrew W. Appel, Lennart Beringer, Santiago Cuellar, and Gordon Stewart, and
++open-source licensed as follows:
++
++Redistribution and use in source and binary forms, with or without
++modification, are permitted provided that the following conditions are met:
++
++- Redistribution of source code must retain the above copyright notice,
++this list of conditions and the following disclaimer.
++
++- Redistribution in binary form must reproduce the above copyright notice,
++this list of conditions and the following disclaimer in the documentation
++and/or other materials provided with the distribution.
++
++THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND ANY
++EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
++WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR THE CONTRIBUTORS BE LIABLE
++FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++SERVICES; LOSS OF USE, DATA OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
++USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++2.  All other subdirectories are Copyright (c) 2004-2013 by Institut National de
++Recherche en Informatique et en Automatique (INRIA) and licensed according to
++the terms set out in file "COMPCERT_LICENSE."
++
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/Files.md ./cascompcert/Files.md
+--- ./CompCert/Files.md	1969-12-31 18:00:00.000000000 -0600
++++ ./cascompcert/Files.md	2019-04-24 10:59:44.000000000 -0500
+@@ -0,0 +1,116 @@
++# CASCompCert
++
++The results related to our paper reside in `concurrency/` subdirectory, others are CompCert-3.0.1 files required by our formalization.
++Below we list contents of `concurrency/`.
++
++## Top-level files
++
++* [`framework/Soundness.v`](Soundness.html)
++ The framework final theorem (Theorem 12)
++* [`FinalTheorem.v`](./FinalTheorem.html)
++ CompCert correctness with x86-SC backend and object modules (Theorem 14).
++* [`x86TSO/FinalTheoremExt.v`](FinalTheoremExt.html)
++ Correctness with x86-TSO backend and object modules (Theorem 15).
++
++## Verification framework
++
++* `common/`  
++ general definitions, e.g. abstract languages, global semantics, DRF, etc..
++   * [`Footprint.v`](Footprint.html)
++    Footprint Definition
++   * [`GMemory.v`](GMemory.html)
++    Global memory instantiation
++   * [`InteractionSemantics.v`](InteractionSemantics.html)
++    The abstract module-local semantics, including the definition of “well-defined language” (Def. 1)
++   * [`GAST.v`](GAST.html), [`GlobDefs.v`](GlobDefs.html), [`GlobSemantics.v`](GlobSemantics.html)
++    Preemptive global semantics (see Fig. 7)
++   * [`ETrace.v`](Etrace.html)
++    Event trace definition
++   * [`DRF.v`](DRF.html)
++    Definition of DRF (see Fig. 9 and Sec. 5)
++   * [`ReachClose.v`](ReachClose.html)
++    Reach-close (Def. 4)
++   * [`Injections`](Injections.html), [`LDSimDefs.v`](LDSimDefs.html)
++    Definitions of footprint matching and rely/guarantee conditions (Fig. 8).
++   * [`LDSim.v`](LDSim.html)
++    Module local simulation (see Def. 2, 3). 
++   * [`SeqCorrect.v`](SeqCorrect.html)
++    Definition of Sequential compiler correctness (Def. 10)
++
++* `framework/`  
++ the verification framework
++
++   * [`NPDefs/NPSemantics.v`](NPSemantics.html)
++    Non-preemptive global semantics (see Fig. 7)
++   * [`NPDefs/NPDRF.v`](NPDRF.html)
++    Definition of NPDRF (see Sec. 5) 
++   * [`NPDefs/NPEquiv.v`](NPEquiv.html)
++    Equivalence between DRF and NPDRF
++   * [`NPDefs/RefineEquiv.v`](RefineEquiv.html)
++    Equivalence between preemptive and non-preemptive semantics of DRF programs (Lemma 9)
++   * [`GlobUSim/GlobUSim.v`](GlobUSim.html), [`GlobUSim/GlobUSimRefine.v`](GlobUSimRefine.html)
++    Global upward simulation and the proofs of the Soundness Lemma (Lemma 7)
++   * [`GlobDSim/GlobDSim.v`](GlobDSim.html), [`GlobDSim/Flipping.v`](Flipping.html)
++    Global downward simulation and the proofs of the Flip Lemma
++   * [`Compositionality/Compositionality.v`](Compositionality.html)
++    Proofs of Compositionality (Lemma 6)
++
++## CompCert verification
++
++* `comp_correct/`
++ CompCert verification
++
++  - [`ClightLang.v`](ClightLang.html), [`AsmLang.v`](AsmLang.html), [`SpecLang.v`](SpecLang.html)
++   Clight, x86-SC, and CImp language instantiations
++  - [`ClightWD.v`](ClightWD.html), [`AsmWD.v`](AsmWD.html), [`SpecLangWDDET.v`](SpecLangWDDET.html)
++   Proofs showing that Clight, x86-SC, CImp languages are well-defined 
++  - [`AsmDET.v`](AsmDET.html), [`SpecLangWDDET.v`](SpecLangWDDET.html)
++   Proofs showing that x86-SC and CImp are deterministic  
++  - [`localize/Localize.v`](Localize.html)
++   Lifting lemmas for reusing CompCert's proofs
++  - [`localize/LDSim_local_transitive.v`](LDSim_local_transitive.html)
++   Transitivity of the CompCert memory based simulation
++  - [`SpecLangIDTrans.v`](SpecLangIDTrans.html)
++   Correctness of the identity transformation of CImp modules
++  - [`CompCorrect.v`](CompCorrect.html)
++   The adapted CompCert compiler and its correctness proof (Lemma 13)
++  - `cfrontend/` and `backend/`:
++   Instantiations of the intermediate languages (`*_local.v`) and proved individual compilation passes.
++   Below are tables of the intermediate language instantiations and proved passes.
++
++  | Intermediate Languages | Instantiation                                     |
++  | ---------------------- | ------------------------------------------------- |
++  | CSharpminor            | [`Csharpminor_local.v`](./Csharpminor_local.html) |
++  | Cminor                 | [`Cminor_local.v`](./Cminor_local.html)           |
++  | RTL                    | [`RTL_local.v`](./RTL_local.html)                 |
++  | LTL                    | [`LTL_local.v`](./LTL_local.html)                 |
++  | Linear                 | [`Linear_local.v`](./Linear_local.html)           |
++  | Mach                   | [`Mach_local.v`](./Mach_local.html)               |
++ 
++  | Pass          | Compiler code                         | Correctness Proof                                 |
++  | ------------- | ------------------------------------- | ------------------------------------------------- |
++  | Cshmgen       | [`cshmgen.v`](cshmgen.html)             | [`cshmgen_proof.v`](cshmgen_proof.html)             |
++  | Cminorgen     | [`cminorgen.v`](cminorgen.html)         | [`cminorgenproof.v`](cminorgen_proof.html)          |
++  | Selection     | [`selection.v`](selection.html)         | [`selection_proof.v`](selection_proof.html)         |
++  | RTLgen        | [`rtlgen.v`](rtlgen.html)               | [`rtlgen_proof.v`](rtlgen_proof.html)               |
++  | Tailcall      | [`tailcall.v`](tailcall.html)           | [`tailcall_proof.v`](tailcall_proof.html)           |
++  | Renumber      | [`renumber.v`](renumber.html)           | [`renumber_proof.v`](renumber_proof.html)           |
++  | Allocation    | [`allocation.v`](allocation.html)       | [`alloc_proof.v`](alloc_proof.html)                 |
++  | Tunneling     | [`tunneling.v`](tunneling.html)         | [`tunneling_proof.v`](tunneling_proof.html)         |
++  | Linearize     | [`linearize.v`](linearize.html)         | [`linearize_proof.v`](linearize_proof.html)         |
++  | CleanupLabels | [`cleanuplabels.v`](cleanuplabels.html) | [`cleanuplabels_proof.v`](cleanuplabels_proof.html) |
++  | Stacking      | [`stacking.v`](stacking.html)           | [`stacking_proof.v`](stacking_proof.html)           |
++  | Asmgen        | [`asmgen.v`](asmgen.html)               | [`asmgen_proof.v`](asmgen_proof.html)               |
++
++## Extended framework 
++
++* `x86TSO/` 
++
++  - [`AsmTSO.v`](AsmTSO.html)
++   The x86-TSO language instantiations
++  - [`ObjectSim.v`](ObjectSim.html)
++   Object simulation
++  - [`TSOCompositionality.v`](TSOCompositionality.html)
++   Proof of Lemma 16 (Restore SC semantics for DRF x86 programs)
++  - `lock_proof/`
++   An efficient spin-lock implementation ([`code.v`](code.html)) with its correctness proof ([`LockProof.v`](LockProof.html))
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/Makefile ./cascompcert/Makefile
+--- ./CompCert/Makefile	2026-06-15 17:46:21.957567475 -0500
++++ ./cascompcert/Makefile	2019-04-24 10:59:44.000000000 -0500
+@@ -1,3 +1,5 @@
++# make file modified to include concurrency extensions.
++
+ #######################################################################
+ #                                                                     #
+ #              The Compcert verified compiler                         #
+@@ -15,17 +17,30 @@
+ 
+ include Makefile.config
+ 
++COQCOPTS+=-w -notation-overridden,-redundant-canonical-projection
++
+ ifeq ($(wildcard $(ARCH)_$(BITSIZE)),)
+ ARCHDIRS=$(ARCH)
+ else
+ ARCHDIRS=$(ARCH)_$(BITSIZE) $(ARCH)
+ endif
++CONCUR_DIRS  = \
++  concurrency concurrency/framework concurrency/framework/NPDefs concurrency/framework/NPDefs/DRFLemmas\
++  concurrency/framework/GlobUSim concurrency/framework/GlobDSim \
++  concurrency/framework/Compositionality concurrency/comp_correct/cfrontend \
++  concurrency/common concurrency/comp_correct concurrency/comp_correct/phases \
++  concurrency/comp_correct/localize \
++  concurrency/comp_correct/backend \
++  concurrency/comp_correct/x86 \
++  concurrency/x86TSO concurrency/x86TSO/lock_proof \
+ 
+ DIRS=lib common $(ARCHDIRS) backend cfrontend driver debug\
+   flocq/Core flocq/Prop flocq/Calc flocq/Appli exportclight \
+-  cparser cparser/validator
++  cparser cparser/validator $(CONCUR_DIRS)
++
+ 
+-RECDIRS=lib common $(ARCHDIRS) backend cfrontend driver flocq exportclight cparser
++RECDIRS=lib common $(ARCHDIRS) backend cfrontend driver flocq exportclight cparser \
++  concurrency 
+ 
+ COQINCLUDES=$(foreach d, $(RECDIRS), -R $(d) compcert.$(d))
+ 
+@@ -40,8 +55,60 @@
+ VPATH=$(DIRS)
+ GPATH=$(DIRS)
+ 
++# Concurrency-Part
++
++CCOMMON =\
++  Memperm.v Blockset.v GMemory.v Footprint.v InteractionSemantics.v         \
++  Injections.v MemClosures.v GAST.v LDSimDefs.v GlobDefs.v ETrace.v         \
++  GlobSemantics.v DRF.v ReachClose.v SeqCorrect.v LDSim.v ListDom.v\
++  FMemPerm.v FMemory.v FMemOpFP.v FMemtype.v MemAux.v GlobSemantics_Lemmas.v FMemLemmas.v
++
++CCOMP =\
++  val_casted.v FCop.v FMemAux.v Cop_fp.v CminorLang.v CminorWD.v AsmLang.v AsmWD.v AsmDET.v \
++  MemClosures_local.v LDSimDefs_local.v LDSim_local.v MemInterpolant.v Localize.v  ValRels.v \
++  IS_local.v MemOpFP.v ValFP.v Cop_fp_local.v DetLemma.v VundefInj.v FiniteMaps.v\
++  ClightLang.v\
++  CminorLocalize.v AsmLocalize.v LDSim_local_transitive.v\
++  AsmIDTransCorrect.v CompCorrect.v \
++  LangProps.v DisableDebug.v InjRels.v renumber.v renumber_proof.v\
++  Cminor_op_footprint.v Op_fp.v infp.v \
++  CUAST.v \
++  helpers.v Cminor_local.v selectop_proof.v splitlong_proof.v selectlong_proof.v selectdiv_proof.v \
++  selection.v selection_proof.v\
++  CminorSel_local.v rtlgen.v rtlgen_proof.v \
++  RTL_local.v RTLtyping_local.v \
++  tailcall.v tailcall_proof.v \
++  allocation.v alloc_proof.v \
++  LTL_local.v  tunneling.v tunneling_proof.v linearize.v linearize_proof.v \
++  cleanuplabels.v cleanuplabels_proof.v \
++  Linear_local.v Lineartyping_local.v loadframe.v \
++  cleanuplabels.v \
++  Mach_local.v stacking.v stacking_proof.v \
++  ASM_local.v asmgen.v asmgen_proof0.v asmgen_proof1.v  asmgen_proof.v \
++  Clight.v ClightLang.v ClightWD.v Clight_local.v cshmgen.v cshmgen_proof.v cminorgen.v cminorgen_proof.v  Csharpminor_local.v \
++  ClightLocalize.v 
++
++CFRAME =\
++  NPSemantics.v NPDet.v NPDRF.v NPEquiv.v GSimDefs.v GlobUSim.v SimDRF.v\
++  USimDRF.v GDefLemmas.v TypedSemantics.v FPLemmas.v RefineEquiv.v SmileReorder.v ConflictReorder.v PRaceLemmas.v DRFLemmas.v\
++  GlobUSimRefine.v GlobDSim.v GlobSim.v Flipping.v SimEtr.v\
++  AuxLDSim.v Invs.v Compositionality.v Soundness.v \
++  AuxLDSim.v Init.v
++
++TSOREF =\
++  SpecLang.v SpecLangIDtrans.v SpecLangWDDET.v \
++  TSOMem.v AsmTSO.v TSOGlobSem.v TSOGlobUSim.v TSOAuxDefs.v\
++  RGRels.v LockSim.v ClientSim.v AsmClientSim.v ObjectSim.v TSOMemLemmas.v TSOStepAuxLemmas.v SpecLangSim.v \
++  code.v InvRG.v LibTactics.v AuxTacLemmas.v MemLemmas.v ObjRGIProp.v LockAcqProof.v LockRelProof.v ObjLemmas.v LockProof.v \
++  SCSemLemmas.v TSOSemLemmas.v \
++  TSOCompInvs.v TSOCompositionality.v \
++  FinalTheoremExt.v
++
++CONCUR =$(CCOMMON) $(CCOMP) $(CFRAME) $(TSOREF) FinalTheorem.v Languages.v FinalTheoremExt.v 
+ # Flocq
+ 
++WORKINGON = $(CONCUR) 
++
+ FLOCQ=\
+   Fcore_Raux.v Fcore_Zaux.v Fcore_defs.v Fcore_digits.v                     \
+   Fcore_float_prop.v Fcore_FIX.v Fcore_FLT.v Fcore_FLX.v                    \
+@@ -57,7 +124,7 @@
+ 
+ VLIB=Axioms.v Coqlib.v Intv.v Maps.v Heaps.v Lattice.v Ordered.v \
+   Iteration.v Integers.v Archi.v Fappli_IEEE_extra.v Floats.v \
+-  Parmov.v UnionFind.v Wfsimpl.v \
++  Parmov.v UnionFind.v Wfsimpl.v 				\
+   Postorder.v FSetAVLplus.v IntvSets.v Decidableplus.v BoolEqual.v
+ 
+ # Parts common to the front-ends and the back-end (in common/)
+@@ -123,15 +190,24 @@
+ # All source files
+ 
+ FILES=$(VLIB) $(COMMON) $(BACKEND) $(CFRONTEND) $(DRIVER) $(FLOCQ) \
+-  $(PARSERVALIDATOR) $(PARSER)
+-
++  $(PARSERVALIDATOR) $(PARSER) $(WORKINGON) \
++  $(CCOMMON) $(CFRAME) $(CCOMP) $(TSOREF)
++  
+ # Generated source files
+ 
+ GENERATED=\
+   $(ARCH)/ConstpropOp.v $(ARCH)/SelectOp.v $(ARCH)/SelectLong.v \
+   backend/SelectDiv.v backend/SplitLong.v \
+   cparser/Parser.v
+-
++default:
++	@test -f .depend || $(MAKE) depend
++	$(MAKE) concur
++work : $(WORKINGON:.v=.vo)
++concur : $(CONCUR:.v=.vo)
++
++clean_concur:
++	rm -f $(patsubst %, %/*.vo, $(CONCUR_DIRS))
++	rm -f $(patsubst %, %/.*.aux, $(CONCUR_DIRS))
+ all:
+ 	@test -f .depend || $(MAKE) depend
+ 	$(MAKE) proof
+@@ -145,7 +221,7 @@
+ endif
+ 
+ 
+-proof: $(FILES:.v=.vo)
++proof:	$(FILES:.v=.vo)
+ 
+ # Turn off some warnings for compiling Flocq
+ flocq/%.vo: COQCOPTS+=-w -deprecated-implicit-arguments
+@@ -283,7 +359,7 @@
+ # compcert.backend.SelectDivproof.divs_mul_shift_2 takes forever to check
+ 
+ check-proof: $(FILES)
+-	$(COQCHK) -admit Integers -admit Floats -admit SelectDivproof Complements
++	$(COQCHK) -admit Integers -admit Floats -admit SelectDivproof 
+ 
+ print-includes:
+ 	@echo $(COQINCLUDES)
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/Makefile.config ./cascompcert/Makefile.config
+--- ./CompCert/Makefile.config	2024-02-05 15:13:44.526285723 -0600
++++ ./cascompcert/Makefile.config	2026-06-12 16:06:44.952753692 -0500
+@@ -1,34 +1,29 @@
+-PREFIX=/usr/local
++PREFIX=install
+ BINDIR=$(PREFIX)/bin
+ LIBDIR=$(PREFIX)/lib/compcert
+ MANDIR=$(PREFIX)/share/man
+ SHAREDIR=$(PREFIX)/share
+-COQDEVDIR=$(PREFIX)/lib/compcert/coq
+-OCAML_NATIVE_COMP=true
+ OCAML_OPT_COMP=true
+-MENHIR_DIR=/home/madoka/.opam/diavst/lib/menhirLib
+-COMPFLAGS=-bin-annot
++MENHIR_INCLUDES=-I /home/madoka/.opam/ccris/lib/menhirLib
+ ABI=standard
+ ARCH=x86
+ ASM_SUPPORTS_CFI=true
+-BITSIZE=64
++BITSIZE=32
+ CASM=gcc
+-CASM_OPTIONS=-m64 -c
+-CASMRUNTIME=gcc -m64 -c
+-CC=gcc -m64
++CASM_OPTIONS=-m32 -c
++CASMRUNTIME=gcc -m32 -c
++CC=gcc -m32
+ CLIGHTGEN=false
+ CLINKER=gcc
+-CLINKER_OPTIONS=-m64 -no-pie
++CLINKER_OPTIONS=-m32
+ CPREPRO=gcc
+-CPREPRO_OPTIONS=-m64 -U__GNUC__ -U__SIZEOF_INT128__ -E
+-ARCHIVER=ar rcs
++CPREPRO_OPTIONS=-std=c99 -m32 -U__GNUC__ -E
+ ENDIANNESS=little
+ HAS_RUNTIME_LIB=true
+ HAS_STANDARD_HEADERS=true
+-INSTALL_COQDEV=false
+ LIBMATH=-lm
+-MODEL=64
++MODEL=32sse2
++STRUCT_PASSING=ints
++STRUCT_RETURN=ref
+ SYSTEM=linux
+ RESPONSEFILE=gnu
+-LIBRARY_FLOCQ=local
+-LIBRARY_MENHIRLIB=local
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/backend/Cminor.v ./cascompcert/backend/Cminor.v
+--- ./CompCert/backend/Cminor.v	2026-06-15 17:46:21.962520708 -0500
++++ ./cascompcert/backend/Cminor.v	2026-06-12 16:31:23.182232783 -0500
+@@ -335,12 +335,12 @@
+   | Oshll => Some (Val.shll arg1 arg2)
+   | Oshrl => Some (Val.shrl arg1 arg2)
+   | Oshrlu => Some (Val.shrlu arg1 arg2)
+-  | Ocmp c => Some (Val.cmp c arg1 arg2)
+-  | Ocmpu c => Some (Val.cmpu (Mem.valid_pointer m) c arg1 arg2)
+-  | Ocmpf c => Some (Val.cmpf c arg1 arg2)
+-  | Ocmpfs c => Some (Val.cmpfs c arg1 arg2)
++  | Ocmp c => option_map Val.of_bool (Val.cmp_bool c arg1 arg2)
++  | Ocmpu c => option_map Val.of_bool (Val.cmpu_bool (Mem.valid_pointer m) c arg1 arg2)
++  | Ocmpf c => option_map Val.of_bool (Val.cmpf_bool c arg1 arg2)
++  | Ocmpfs c => option_map Val.of_bool (Val.cmpfs_bool c arg1 arg2)
+   | Ocmpl c => Val.cmpl c arg1 arg2
+-  | Ocmplu c => Val.cmplu (Mem.valid_pointer m) c arg1 arg2
++  | Ocmplu c => option_map Val.of_bool (Val.cmplu_bool (Mem.valid_pointer m) c arg1 arg2)
+   end.
+ 
+ (** Evaluation of an expression: [eval_expr ge sp e m a v]
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/backend/Selectionproof.v ./cascompcert/backend/Selectionproof.v
+--- ./CompCert/backend/Selectionproof.v	2026-06-15 17:46:21.967320268 -0500
++++ ./cascompcert/backend/Selectionproof.v	2026-06-12 16:31:23.184828341 -0500
+@@ -191,7 +191,8 @@
+   intros until a. functional induction (condexpr_of_expr a); intros.
+ (* compare *)
+   inv H. econstructor; eauto.
+-  simpl in H6. inv H6. apply Val.bool_of_val_of_optbool. auto.
++  simpl in H6. inv H6. apply Val.bool_of_val_of_optbool.
++  destruct eval_condition; inv H1. auto.
+ (* condition *)
+   inv H. econstructor; eauto. destruct va; eauto.
+ (* let *)
+@@ -315,10 +316,10 @@
+   eapply eval_shll; eauto.
+   eapply eval_shrl; eauto.
+   eapply eval_shrlu; eauto.
+-  apply eval_comp; auto.
+-  apply eval_compu; auto.
+-  apply eval_compf; auto.
+-  apply eval_compfs; auto.
++  eapply eval_comp_opt; eauto.
++  eapply eval_compu_opt; eauto.
++  eapply eval_compf_opt; eauto.
++  eapply eval_compfs_opt; eauto.
+   exists v; split; auto. eapply eval_cmpl; eauto.
+   exists v; split; auto. eapply eval_cmplu; eauto.
+ Qed.
+@@ -469,25 +470,26 @@
+             eval_expr tge sp e m le (Eop (Ointconst n) Enil) (Vint n)).
+   { intros. econstructor. constructor. auto. }
+   intros. eapply sel_switch_correct with (R := Rint); eauto.
+-- intros until n; intros EVAL R RANGE.
+-  exploit eval_comp. eexact EVAL. apply (INTCONST (Int.repr n)).
++- intros until n; intros EVAL R RANGE. inv R.
++  exploit eval_comp_opt. eexact EVAL. apply (INTCONST (Int.repr n)).
++  simpl. eauto.
+   instantiate (1 := Ceq). intros (vb & A & B).
+-  inv R. unfold Val.cmp in B. simpl in B. revert B.
++  unfold Val.cmp in B. simpl in B. revert B.
+   predSpec Int.eq Int.eq_spec n0 (Int.repr n); intros B; inv B.
+   rewrite Int.unsigned_repr. unfold proj_sumbool; rewrite zeq_true; auto.
+   unfold Int.max_unsigned; omega.
+   unfold proj_sumbool; rewrite zeq_false; auto.
+   red; intros; elim H1. rewrite <- (Int.repr_unsigned n0). congruence.
+-- intros until n; intros EVAL R RANGE.
+-  exploit eval_compu. eexact EVAL. apply (INTCONST (Int.repr n)).
++- intros until n; intros EVAL R RANGE. inv R.
++  exploit eval_compu_opt. eexact EVAL. apply (INTCONST (Int.repr n)). simpl. eauto.
+   instantiate (1 := Clt). intros (vb & A & B).
+-  inv R. unfold Val.cmpu in B. simpl in B.
++  unfold Val.cmpu in B. simpl in B.
+   unfold Int.ltu in B. rewrite Int.unsigned_repr in B.
+   destruct (zlt (Int.unsigned n0) n); inv B; auto.
+   unfold Int.max_unsigned; omega.
+-- intros until n; intros EVAL R RANGE.
++- intros until n; intros EVAL R RANGE. inv R.
+   exploit eval_sub. eexact EVAL. apply (INTCONST (Int.repr n)). intros (vb & A & B).
+-  inv R. simpl in B. inv B. econstructor; split; eauto.
++  simpl in B. inv B. econstructor; split; eauto.
+   replace ((Int.unsigned n0 - n) mod Int.modulus)
+      with (Int.unsigned (Int.sub n0 (Int.repr n))).
+   constructor.
+@@ -567,10 +569,13 @@
+   assert (CMPU: forall c,
+     eval_binop (Ocmpu c) v1 v2 m = Some v ->
+     exists v' : val, eval_binop (Ocmpu c) v1' v2' m' = Some v' /\ Val.lessdef v v').
+-  { intros c A. simpl in *. inv A. econstructor; split. eauto.
+-    apply Val.of_optbool_lessdef.
+-    intros. apply Val.cmpu_bool_lessdef with (Mem.valid_pointer m) v1 v2; auto.
+-    intros; eapply Mem.valid_pointer_extends; eauto. }
++  { intros c A. simpl in *.
++    inv LD1; inv LD2; try (unfold Val.cmpu_bool in A; try destruct v1'; try destruct v2'; inv A; fail).
++    exists v; split; auto. destruct (Val.cmpu_bool (Mem.valid_pointer m) c v1' v2') eqn:R; [|discriminate] .
++    inv A. eapply Val.cmpu_bool_lessdef with (valid_ptr':= Mem.valid_pointer m')in R.
++    rewrite R; auto.
++    intros; eapply Mem.valid_pointer_extends; eauto.
++    auto. auto. }
+   assert (CMPLU: forall c,
+     eval_binop (Ocmplu c) v1 v2 m = Some v ->
+     exists v' : val, eval_binop (Ocmplu c) v1' v2' m' = Some v' /\ Val.lessdef v v').
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/backend/SplitLongproof.v ./cascompcert/backend/SplitLongproof.v
+--- ./CompCert/backend/SplitLongproof.v	2026-06-15 17:46:21.967510126 -0500
++++ ./cascompcert/backend/SplitLongproof.v	2026-06-12 16:31:23.185213828 -0500
+@@ -952,7 +952,7 @@
+   intros. unfold cmpl_eq_zero.
+   eapply eval_splitlong_strict; eauto. intros.
+   exploit eval_or. eexact H0. eexact H1. intros [v1 [A1 B1]]. simpl in B1; inv B1.
+-  exploit eval_comp. eexact A1. instantiate (2 := Eop (Ointconst Int.zero) Enil). EvalOp.
++  exploit eval_comp_opt. eexact A1. instantiate (2 := Eop (Ointconst Int.zero) Enil). EvalOp. simpl; auto.
+   instantiate (1 := Ceq). intros [v2 [A2 B2]].
+   unfold Val.cmp in B2; simpl in B2.
+   rewrite <- decompose_cmpl_eq_zero in B2.
+@@ -968,7 +968,7 @@
+   intros. unfold cmpl_ne_zero.
+   eapply eval_splitlong_strict; eauto. intros.
+   exploit eval_or. eexact H0. eexact H1. intros [v1 [A1 B1]]. simpl in B1; inv B1.
+-  exploit eval_comp. eexact A1. instantiate (2 := Eop (Ointconst Int.zero) Enil). EvalOp.
++  exploit eval_comp_opt. eexact A1. instantiate (2 := Eop (Ointconst Int.zero) Enil). EvalOp. simpl; auto.
+   instantiate (1 := Cne). intros [v2 [A2 B2]].
+   unfold Val.cmp in B2; simpl in B2.
+   rewrite <- decompose_cmpl_eq_zero in B2.
+@@ -1088,8 +1088,8 @@
+   destruct (is_longconst_zero b) eqn:LC.
+ + exploit is_longconst_zero_sound; eauto. intros EQ; inv EQ; clear H0.
+   exploit eval_highlong. eexact H. intros [v1 [A1 B1]]. simpl in B1. inv B1.
+-  exploit eval_comp. eexact A1.
+-  instantiate (2 := Eop (Ointconst Int.zero) Enil). EvalOp.
++  exploit eval_comp_opt. eexact A1.
++  instantiate (2 := Eop (Ointconst Int.zero) Enil). EvalOp. simpl; auto.
+   instantiate (1 := Clt). intros [v2 [A2 B2]].
+   unfold Val.cmp in B2. simpl in B2.
+   rewrite <- (Int64.ofwords_recompose x). rewrite decompose_cmpl_lt_zero.
+@@ -1107,8 +1107,8 @@
+   destruct (is_longconst_zero b) eqn:LC.
+ + exploit is_longconst_zero_sound; eauto. intros EQ; inv EQ; clear H0.
+   exploit eval_highlong. eexact H. intros [v1 [A1 B1]]. simpl in B1; inv B1.
+-  exploit eval_comp. eexact A1.
+-  instantiate (2 := Eop (Ointconst Int.zero) Enil). EvalOp.
++  exploit eval_comp_opt. eexact A1.
++  instantiate (2 := Eop (Ointconst Int.zero) Enil). EvalOp. simpl; auto.
+   instantiate (1 := Cge). intros [v2 [A2 B2]].
+   unfold Val.cmp in B2; simpl in B2.
+   rewrite <- (Int64.ofwords_recompose x). rewrite decompose_cmpl_lt_zero.
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/cfrontend/Clight.v ./cascompcert/cfrontend/Clight.v
+--- ./CompCert/cfrontend/Clight.v	2026-06-15 17:46:21.970691468 -0500
++++ ./cascompcert/cfrontend/Clight.v	2026-06-12 16:31:23.187414088 -0500
+@@ -225,8 +225,8 @@
+   | assign_loc_value: forall v chunk m',
+       access_mode ty = By_value chunk ->
+       Mem.storev chunk m (Vptr b ofs) v = Some m' ->
+-      assign_loc ce ty m b ofs v m'
+-  | assign_loc_copy: forall b' ofs' bytes m',
++      assign_loc ce ty m b ofs v m'.
++(*  | assign_loc_copy: forall b' ofs' bytes m',
+       access_mode ty = By_copy ->
+       (sizeof ce ty > 0 -> (alignof_blockcopy ce ty | Ptrofs.unsigned ofs')) ->
+       (sizeof ce ty > 0 -> (alignof_blockcopy ce ty | Ptrofs.unsigned ofs)) ->
+@@ -235,7 +235,7 @@
+               \/ Ptrofs.unsigned ofs + sizeof ce ty <= Ptrofs.unsigned ofs' ->
+       Mem.loadbytes m b' (Ptrofs.unsigned ofs') (sizeof ce ty) = Some bytes ->
+       Mem.storebytes m b (Ptrofs.unsigned ofs) bytes = Some m' ->
+-      assign_loc ce ty m b ofs (Vptr b' ofs') m'.
++      assign_loc ce ty m b ofs (Vptr b' ofs') m'.*)
+ 
+ Section SEMANTICS.
+ 
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/cfrontend/Cminorgenproof.v ./cascompcert/cfrontend/Cminorgenproof.v
+--- ./CompCert/cfrontend/Cminorgenproof.v	2026-06-15 17:46:21.971395643 -0500
++++ ./cascompcert/cfrontend/Cminorgenproof.v	2026-06-12 16:31:23.187850159 -0500
+@@ -1388,22 +1388,24 @@
+ - TrivialExists; inv H0; inv H1; simpl; auto.
+   destruct (Int.ltu i0 Int64.iwordsize'); constructor.
+ - (* cmp *)
+-  TrivialExists. inv H0; inv H1; auto. apply val_inject_val_of_optbool.
++  TrivialExists. inv H0; inv H1; simpl in *; try discriminate; auto.
++  inv H4. eexists; split; [eauto|]. apply val_inject_val_of_bool.
+ - (* cmpu *)
+-  TrivialExists. unfold Val.cmpu.
+   destruct (Val.cmpu_bool (Mem.valid_pointer m) c v1 v2) as [b|] eqn:E.
+   replace (Val.cmpu_bool (Mem.valid_pointer tm) c tv1 tv2) with (Some b).
+-  apply val_inject_val_of_optbool.
++  simpl in *. TrivialExists. inv H4. apply val_inject_val_of_bool.
+   symmetry. eapply Val.cmpu_bool_inject; eauto.
+   intros; eapply Mem.valid_pointer_inject_val; eauto.
+   intros; eapply Mem.weak_valid_pointer_inject_val; eauto.
+   intros; eapply Mem.weak_valid_pointer_inject_no_overflow; eauto.
+   intros; eapply Mem.different_pointers_inject; eauto.
+-  simpl; auto.
++  discriminate.
+ - (* cmpf *)
+-  TrivialExists. inv H0; inv H1; auto. apply val_inject_val_of_optbool.
++  inv H0; inv H1; simpl in *; try discriminate; auto.
++  inv H4; TrivialExists. apply val_inject_val_of_bool.
+ - (* cmpfs *)
+-  TrivialExists. inv H0; inv H1; auto. apply val_inject_val_of_optbool.
++  inv H0; inv H1; simpl in *; try discriminate; auto.
++  inv H4; TrivialExists. apply val_inject_val_of_bool.
+ - (* cmpl *)
+   unfold Val.cmpl in *. inv H0; inv H1; simpl in H4; inv H4.
+   econstructor; split. simpl; eauto. apply val_inject_val_of_bool.
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/cfrontend/Cshmgenproof.v ./cascompcert/cfrontend/Cshmgenproof.v
+--- ./CompCert/cfrontend/Cshmgenproof.v	2026-06-15 17:46:21.972642408 -0500
++++ ./cascompcert/cfrontend/Cshmgenproof.v	2026-06-12 16:31:23.188282426 -0500
+@@ -307,13 +307,13 @@
+     rewrite Int.eq_true. auto. }
+   destruct a; simpl; auto. destruct b; auto.
+ - inv H. econstructor; eauto. rewrite H6. decEq. decEq.
+-  simpl in H6. inv H6. eauto.
++  simpl in H6. destruct (Val.cmp_bool) eqn:?; inv H6. destruct b; inv H0; eauto.
+ - inv H. econstructor; eauto. rewrite H6. decEq. decEq.
+-  simpl in H6. inv H6. eauto.
++  simpl in H6. destruct (Val.cmpu_bool) eqn:?; inv H6. destruct b; inv H0; eauto. 
+ - inv H. econstructor; eauto. rewrite H6. decEq. decEq.
+-  simpl in H6. inv H6. eauto.
++  simpl in H6. destruct (Val.cmpf_bool) eqn:?; inv H6. destruct b; inv H0; eauto. 
+ - inv H. econstructor; eauto. rewrite H6. decEq. decEq.
+-  simpl in H6. inv H6. eauto.
++  simpl in H6. destruct (Val.cmpfs_bool) eqn:?; inv H6. destruct b; inv H0; eauto. 
+ - inv H. econstructor; eauto. rewrite H6. decEq. decEq.
+   simpl in H6. unfold Val.cmpl in H6.
+   destruct (Val.cmpl_bool c v1 v2) as [[]|]; inv H6; reflexivity.
+@@ -339,10 +339,15 @@
+   assert (OF_BOOL: forall ob, option_map Val.of_bool ob <> Some (Vptr b i)).
+   { intros. destruct ob as [[]|]; discriminate. }
+   destruct a; simpl; auto. destruct b0; auto.
+-- inv H; eelim OF_OPTBOOL; eauto.
+-- inv H; eelim OF_OPTBOOL; eauto.
+-- inv H; eelim OF_OPTBOOL; eauto.
+-- inv H; eelim OF_OPTBOOL; eauto.
++  Ltac OMelim:=
++    match goal with
++    | H: option_map _ ?x = _ |- _ => destruct x eqn:?; inv H
++    | _ => idtac
++    end.
++- inv H; eelim OF_OPTBOOL; eauto. simpl in H8. instantiate (1:= Some false). OMelim. destruct b0; inv H2.
++- inv H; eelim OF_OPTBOOL; eauto. simpl in H8. instantiate (1:= Some false). OMelim. destruct b0; inv H2.
++- inv H; eelim OF_OPTBOOL; eauto. simpl in H8. instantiate (1:= Some false). OMelim. destruct b0; inv H2.
++- inv H; eelim OF_OPTBOOL; eauto. simpl in H8. instantiate (1:= Some false). OMelim. destruct b0; inv H2.
+ - inv H; eelim OF_BOOL; eauto.
+ - inv H; eelim OF_BOOL; eauto.
+ Qed.
+@@ -851,8 +856,9 @@
+   unfold cmp_ptr, make_cmp_ptr; intros.
+   destruct Archi.ptr64.
+ - econstructor; eauto.
+-- econstructor; eauto. simpl. unfold Val.cmpu.
+-  destruct (Val.cmpu_bool (Mem.valid_pointer m) cmp va vb) as [bo|]; inv H. auto.
++- econstructor; eauto.
++  (*simpl. unfold Val.cmpu.
++  destruct (Val.cmpu_bool (Mem.valid_pointer m) cmp va vb) as [bo|]; inv H. auto.*)
+ Qed.
+ 
+ Remark make_ptrofs_of_int_correct:
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/common/Memory.v ./cascompcert/common/Memory.v
+--- ./CompCert/common/Memory.v	2026-06-15 17:46:21.977294480 -0500
++++ ./cascompcert/common/Memory.v	2026-06-12 16:31:23.191576268 -0500
+@@ -2252,7 +2252,7 @@
+     mi_memval:
+       forall b1 ofs b2 delta,
+       f b1 = Some(b2, delta) ->
+-      perm m1 b1 ofs Cur Readable ->
++      perm m1 b1 ofs Max Readable ->
+       memval_inject f (ZMap.get ofs m1.(mem_contents)#b1) (ZMap.get (ofs+delta) m2.(mem_contents)#b2)
+   }.
+ 
+@@ -2311,7 +2311,7 @@
+   rewrite inj_S in H1.
+   constructor.
+   eapply mi_memval; eauto.
+-  apply H1. omega.
++  apply perm_cur_max, H1. omega.
+   replace (ofs + delta + 1) with ((ofs + 1) + delta) by omega.
+   apply IHn. red; intros; apply H1; omega.
+ Qed.
+@@ -2413,7 +2413,7 @@
+   assert (b3 = b2) by congruence. subst b3.
+   assert (delta0 = delta) by congruence. subst delta0.
+   rewrite peq_true.
+-  apply setN_inj with (access := fun ofs => perm m1 b1 ofs Cur Readable).
++  apply setN_inj with (access := fun ofs => perm m1 b1 ofs Max Readable).
+   apply encode_val_inject; auto. intros. eapply mi_memval; eauto. eauto with mem.
+   destruct (peq b3 b2). subst b3.
+   (* block <> b1, block = b2 *)
+@@ -2453,7 +2453,7 @@
+   mem_inj f m1 m2 ->
+   (forall b' delta ofs',
+     f b' = Some(b, delta) ->
+-    perm m1 b' ofs' Cur Readable ->
++    perm m1 b' ofs' Max Readable ->
+     ofs <= ofs' + delta < ofs + size_chunk chunk -> False) ->
+   store chunk m2 b ofs v = Some m2' ->
+   mem_inj f m1 m2'.
+@@ -2506,7 +2506,7 @@
+   red; intros. eapply perm_storebytes_2; eauto.
+ (* mem_contents *)
+   intros.
+-  assert (perm m1 b0 ofs0 Cur Readable). eapply perm_storebytes_2; eauto.
++  assert (perm m1 b0 ofs0 Max Readable). eapply perm_storebytes_2; eauto.
+   rewrite (storebytes_mem_contents _ _ _ _ _ H0).
+   rewrite (storebytes_mem_contents _ _ _ _ _ STORE).
+   rewrite ! PMap.gsspec. destruct (peq b0 b1). subst b0.
+@@ -2514,7 +2514,7 @@
+   assert (b3 = b2) by congruence. subst b3.
+   assert (delta0 = delta) by congruence. subst delta0.
+   rewrite peq_true.
+-  apply setN_inj with (access := fun ofs => perm m1 b1 ofs Cur Readable); auto.
++  apply setN_inj with (access := fun ofs => perm m1 b1 ofs Max Readable); auto.
+   destruct (peq b3 b2). subst b3.
+   (* block <> b1, block = b2 *)
+   rewrite setN_other. auto.
+@@ -2556,7 +2556,7 @@
+   mem_inj f m1 m2 ->
+   (forall b' delta ofs',
+     f b' = Some(b, delta) ->
+-    perm m1 b' ofs' Cur Readable ->
++    perm m1 b' ofs' Max Readable ->
+     ofs <= ofs' + delta < ofs + Z_of_nat (length bytes2) -> False) ->
+   storebytes m2 b ofs bytes2 = Some m2' ->
+   mem_inj f m1 m2'.
+@@ -2595,7 +2595,7 @@
+   red; intros. eapply perm_storebytes_2; eauto.
+ (* mem_contents *)
+   intros.
+-  assert (perm m1 b0 ofs Cur Readable). eapply perm_storebytes_2; eauto.
++  assert (perm m1 b0 ofs Max Readable). eapply perm_storebytes_2; eauto.
+   rewrite (storebytes_mem_contents _ _ _ _ _ H0).
+   rewrite (storebytes_mem_contents _ _ _ _ _ H1).
+   simpl. rewrite ! PMap.gsspec.
+@@ -2618,7 +2618,7 @@
+   eauto.
+ (* mem_contents *)
+   intros.
+-  assert (perm m2 b0 (ofs + delta) Cur Readable).
++  assert (perm m2 b0 (ofs + delta) Max Readable).
+     eapply mi_perm0; eauto.
+   assert (valid_block m2 b0) by eauto with mem.
+   rewrite <- MEM; simpl. rewrite PMap.gso. eauto with mem.
+@@ -2923,7 +2923,7 @@
+   forall chunk m1 m2 b ofs v m2',
+   extends m1 m2 ->
+   store chunk m2 b ofs v = Some m2' ->
+-  (forall ofs', perm m1 b ofs' Cur Readable -> ofs <= ofs' < ofs + size_chunk chunk -> False) ->
++  (forall ofs', perm m1 b ofs' Max Readable -> ofs <= ofs' < ofs + size_chunk chunk -> False) ->
+   extends m1 m2'.
+ Proof.
+   intros. inversion H. constructor.
+@@ -2975,7 +2975,7 @@
+   forall m1 m2 b ofs bytes2 m2',
+   extends m1 m2 ->
+   storebytes m2 b ofs bytes2 = Some m2' ->
+-  (forall ofs', perm m1 b ofs' Cur Readable -> ofs <= ofs' < ofs + Z_of_nat (length bytes2) -> False) ->
++  (forall ofs', perm m1 b ofs' Max Readable -> ofs <= ofs' < ofs + Z_of_nat (length bytes2) -> False) ->
+   extends m1 m2'.
+ Proof.
+   intros. inversion H. constructor.
+@@ -3532,7 +3532,7 @@
+   inject f m1 m2 ->
+   (forall b' delta ofs',
+     f b' = Some(b, delta) ->
+-    perm m1 b' ofs' Cur Readable ->
++    perm m1 b' ofs' Max Readable ->
+     ofs <= ofs' + delta < ofs + size_chunk chunk -> False) ->
+   store chunk m2 b ofs v = Some m2' ->
+   inject f m1 m2'.
+@@ -3628,7 +3628,7 @@
+   inject f m1 m2 ->
+   (forall b' delta ofs',
+     f b' = Some(b, delta) ->
+-    perm m1 b' ofs' Cur Readable ->
++    perm m1 b' ofs' Max Readable ->
+     ofs <= ofs' + delta < ofs + Z_of_nat (length bytes2) -> False) ->
+   storebytes m2 b ofs bytes2 = Some m2' ->
+   inject f m1 m2'.
+@@ -4282,7 +4282,7 @@
+     (perm m_before b ofs k p <-> perm m_after b ofs k p);
+   unchanged_on_contents:
+     forall b ofs,
+-    P b ofs -> perm m_before b ofs Cur Readable ->
++    P b ofs -> perm m_before b ofs Max Readable ->
+     ZMap.get ofs (PMap.get b m_after.(mem_contents)) =
+     ZMap.get ofs (PMap.get b m_before.(mem_contents))
+ }.
+@@ -4341,7 +4341,7 @@
+   destruct (range_perm_dec m b ofs (ofs + n) Cur Readable).
+   rewrite pred_dec_true. f_equal.
+   apply getN_exten. intros. rewrite nat_of_Z_eq in H by omega.
+-  apply unchanged_on_contents0; auto.
++  apply unchanged_on_contents0, perm_cur_max; auto.
+   red; intros. apply unchanged_on_perm0; auto.
+   rewrite pred_dec_false. auto.
+   red; intros; elim n0; red; intros. apply <- unchanged_on_perm0; auto.
+@@ -4371,7 +4371,7 @@
+ Proof.
+   intros. unfold load. destruct (valid_access_dec m chunk b ofs Readable).
+   destruct v. rewrite pred_dec_true. f_equal. f_equal. apply getN_exten. intros.
+-  rewrite <- size_chunk_conv in H4. eapply unchanged_on_contents; eauto.
++  rewrite <- size_chunk_conv in H4. eapply unchanged_on_contents, perm_cur_max; eauto.
+   split; auto. red; intros. eapply perm_unchanged_on; eauto.
+   rewrite pred_dec_false. auto.
+   red; intros [A B]; elim n; split; auto. red; intros; eapply perm_unchanged_on_2; eauto.
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/common/Memtype.v ./cascompcert/common/Memtype.v
+--- ./CompCert/common/Memtype.v	2026-06-15 17:46:21.977440172 -0500
++++ ./cascompcert/common/Memtype.v	2026-06-12 16:31:23.191780643 -0500
+@@ -841,7 +841,7 @@
+   forall chunk m1 m2 b ofs v m2',
+   extends m1 m2 ->
+   store chunk m2 b ofs v = Some m2' ->
+-  (forall ofs', perm m1 b ofs' Cur Readable -> ofs <= ofs' < ofs + size_chunk chunk -> False) ->
++  (forall ofs', perm m1 b ofs' Max Readable -> ofs <= ofs' < ofs + size_chunk chunk -> False) ->
+   extends m1 m2'.
+ 
+ Axiom storev_extends:
+@@ -867,7 +867,7 @@
+   forall m1 m2 b ofs bytes2 m2',
+   extends m1 m2 ->
+   storebytes m2 b ofs bytes2 = Some m2' ->
+-  (forall ofs', perm m1 b ofs' Cur Readable -> ofs <= ofs' < ofs + Z_of_nat (length bytes2) -> False) ->
++  (forall ofs', perm m1 b ofs' Max Readable -> ofs <= ofs' < ofs + Z_of_nat (length bytes2) -> False) ->
+   extends m1 m2'.
+ 
+ Axiom alloc_extends:
+@@ -1076,7 +1076,7 @@
+   inject f m1 m2 ->
+   (forall b' delta ofs',
+     f b' = Some(b, delta) ->
+-    perm m1 b' ofs' Cur Readable ->
++    perm m1 b' ofs' Max Readable ->
+     ofs <= ofs' + delta < ofs + size_chunk chunk -> False) ->
+   store chunk m2 b ofs v = Some m2' ->
+   inject f m1 m2'.
+@@ -1112,7 +1112,7 @@
+   inject f m1 m2 ->
+   (forall b' delta ofs',
+     f b' = Some(b, delta) ->
+-    perm m1 b' ofs' Cur Readable ->
++    perm m1 b' ofs' Max Readable ->
+     ofs <= ofs' + delta < ofs + Z_of_nat (length bytes2) -> False) ->
+   storebytes m2 b ofs bytes2 = Some m2' ->
+   inject f m1 m2'.
+Binary files ./CompCert/flocq/IEEE754/Binary.vo and ./cascompcert/flocq/IEEE754/Binary.vo differ
+Binary files ./CompCert/flocq/IEEE754/BinarySingleNaN.vo and ./cascompcert/flocq/IEEE754/BinarySingleNaN.vo differ
+Binary files ./CompCert/flocq/IEEE754/Bits.vo and ./cascompcert/flocq/IEEE754/Bits.vo differ
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/lib/Maps.v ./cascompcert/lib/Maps.v
+--- ./CompCert/lib/Maps.v	2026-06-15 17:46:21.991071721 -0500
++++ ./cascompcert/lib/Maps.v	2026-06-12 16:31:23.216508267 -0500
+@@ -196,7 +196,7 @@
+ 
+   Definition t := tree.
+ 
+-  Definition empty (A : Type) := (Leaf : t A).
++  Definition empty (A : Type) := (Leaf : t A). 
+ 
+   Fixpoint get (A : Type) (i : positive) (m : t A) {struct i} : option A :=
+     match m with
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/pg_mac ./cascompcert/pg_mac
+--- ./CompCert/pg_mac	1969-12-31 18:00:00.000000000 -0600
++++ ./cascompcert/pg_mac	2019-04-24 10:59:44.000000000 -0500
+@@ -0,0 +1,30 @@
++#!/bin/sh
++# Start Proof General with the right -I options
++# Use the Makefile to rebuild dependencies if needed
++# Recompile the modified file after coqide editing
++
++PWD=`pwd`
++INCLUDES=`make print-includes`
++
++make -q ${1}o || {
++  make -n ${1}o | grep -v "\\b${1}\\b" | \
++  (while read cmd; do
++    sh -c "$cmd" || exit 2
++   done)
++}
++
++COQPROGNAME="${COQBIN}coqtop"
++
++COQPROGARGS=""
++for arg in $INCLUDES; do
++  case "$arg" in
++    -I|-R|-as|compcert*)
++      COQPROGARGS="$COQPROGARGS \"$arg\"";;
++    *)
++      COQPROGARGS="$COQPROGARGS \"$PWD/$arg\"";;
++  esac
++done
++
++/Applications/Emacs.app/Contents/MacOS/Emacs --eval "(setq coq-prog-name \"$COQPROGNAME\")" \
++ --eval "(setq coq-prog-args '($COQPROGARGS))" $1 \
++&& make ${1}o
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/wc_compcert.sh ./cascompcert/wc_compcert.sh
+--- ./CompCert/wc_compcert.sh	1969-12-31 18:00:00.000000000 -0600
++++ ./cascompcert/wc_compcert.sh	2019-04-24 10:59:44.000000000 -0500
+@@ -0,0 +1,14 @@
++#!/bin/sh
++coqwc \
++cfrontend/Cshmgenproof.v \
++cfrontend/Cminorgenproof.v \
++backend/Selectionproof.v \
++backend/RTLgenproof.v \
++backend/Tailcallproof.v \
++backend/Renumberproof.v \
++backend/Allocproof.v \
++backend/Tunnelingproof.v \
++backend/Linearizeproof.v \
++backend/CleanupLabelsproof.v \
++backend/Stackingproof.v \
++x86/Asmgenproof.v
+\ No newline at end of file
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/wc_compcorrect.sh ./cascompcert/wc_compcorrect.sh
+--- ./CompCert/wc_compcorrect.sh	1969-12-31 18:00:00.000000000 -0600
++++ ./cascompcert/wc_compcorrect.sh	2019-04-24 10:59:44.000000000 -0500
+@@ -0,0 +1,14 @@
++#!/bin/sh
++coqwc \
++concurrency/comp_correct/cfrontend/cshmgen_proof.v \
++concurrency/comp_correct/cfrontend/cminorgen_proof.v \
++concurrency/comp_correct/backend/selection_proof.v \
++concurrency/comp_correct/backend/rtlgen_proof.v \
++concurrency/comp_correct/backend/tailcall_proof.v \
++concurrency/comp_correct/backend/renumber_proof.v \
++concurrency/comp_correct/backend/alloc_proof.v \
++concurrency/comp_correct/backend/tunneling_proof.v \
++concurrency/comp_correct/backend/linearize_proof.v \
++concurrency/comp_correct/backend/cleanuplabels_proof.v \
++concurrency/comp_correct/backend/stacking_proof.v \
++concurrency/comp_correct/backend/asmgen_proof.v
+\ No newline at end of file
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/wc_compositionality.sh ./cascompcert/wc_compositionality.sh
+--- ./CompCert/wc_compositionality.sh	1969-12-31 18:00:00.000000000 -0600
++++ ./cascompcert/wc_compositionality.sh	2019-04-24 10:59:44.000000000 -0500
+@@ -0,0 +1,3 @@
++coqwc concurrency/framework/Compositionality/Compositionality.v \
++concurrency/framework/Compositionality/AuxLDSim.v \
++concurrency/framework/Compositionality/Invs.v
+\ No newline at end of file
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/wc_drfpreserv.sh ./cascompcert/wc_drfpreserv.sh
+--- ./CompCert/wc_drfpreserv.sh	1969-12-31 18:00:00.000000000 -0600
++++ ./cascompcert/wc_drfpreserv.sh	2019-04-24 10:59:44.000000000 -0500
+@@ -0,0 +1 @@
++coqwc concurrency/framework/NPDefs/USimDRF.v
+\ No newline at end of file
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/wc_fplib.sh ./cascompcert/wc_fplib.sh
+--- ./CompCert/wc_fplib.sh	1969-12-31 18:00:00.000000000 -0600
++++ ./cascompcert/wc_fplib.sh	2019-04-24 10:59:44.000000000 -0500
+@@ -0,0 +1,3 @@
++#!/bin/sh
++
++coqwc concurrency/common/FMemOpFP.v concurrency/comp_correct/localize/MemOpFP.v concurrency/comp_correct/localize/ValFP.v
+\ No newline at end of file
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/wc_lifting.sh ./cascompcert/wc_lifting.sh
+--- ./CompCert/wc_lifting.sh	1969-12-31 18:00:00.000000000 -0600
++++ ./cascompcert/wc_lifting.sh	2019-04-24 10:59:44.000000000 -0500
+@@ -0,0 +1 @@
++coqwc concurrency/comp_correct/localize/Localize.v
+\ No newline at end of file
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/wc_semequiv.sh ./cascompcert/wc_semequiv.sh
+--- ./CompCert/wc_semequiv.sh	1969-12-31 18:00:00.000000000 -0600
++++ ./cascompcert/wc_semequiv.sh	2019-04-24 10:59:44.000000000 -0500
+@@ -0,0 +1 @@
++coqwc concurrency/framework/NPDefs/RefineEquiv.v
+\ No newline at end of file
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/x86/Asm.v ./cascompcert/x86/Asm.v
+--- ./CompCert/x86/Asm.v	2026-06-15 17:46:22.020692705 -0500
++++ ./cascompcert/x86/Asm.v	2026-06-12 16:31:23.218205834 -0500
+@@ -433,6 +433,23 @@
+      #OF  <- (Val.sub_overflow x y)
+      #PF  <- Vundef.
+ 
++Definition check_compare_ints (x y: val) (m: mem) : bool :=
++(*  let weak_valid_ptr := fun b ofs => (Mem.valid_pointer m b ofs) || (Mem.valid_pointer m b (ofs - 1)) in
++  match x, y with
++  | Vint n1, Vint n2 => true
++  | Vint n1, Vptr b2 ofs2 => Int.eq n1 Int.zero && weak_valid_ptr b2 (Ptrofs.unsigned ofs2)
++  | Vptr b1 ofs1, Vint n2 => Int.eq n2 Int.zero && weak_valid_ptr b1 (Ptrofs.unsigned ofs1)
++  | Vptr b1 ofs1, Vptr b2 ofs2 =>
++    if eq_block b1 b2
++    then weak_valid_ptr b1 (Ptrofs.unsigned ofs1) && weak_valid_ptr b2 (Ptrofs.unsigned ofs2)
++    else Mem.valid_pointer m b1 (Ptrofs.unsigned ofs1) && Mem.valid_pointer m b2 (Ptrofs.unsigned ofs2)
++  | _, _ => false
++  end.*)
++  if (Val.cmpu_bool (Mem.valid_pointer m) Ceq x y)
++  then true
++  else false.
++
++
+ Definition compare_longs (x y: val) (rs: regset) (m: mem): regset :=
+   rs #ZF  <- (Val.maketotal (Val.cmplu (Mem.valid_pointer m) Ceq x y))
+      #CF  <- (Val.maketotal (Val.cmplu (Mem.valid_pointer m) Clt x y))
+@@ -834,11 +851,15 @@
+   | Prorq_ri rd n =>
+       Next (nextinstr_nf (rs#rd <- (Val.rorl rs#rd (Vint n)))) m
+   | Pcmpl_rr r1 r2 =>
+-      Next (nextinstr (compare_ints (rs r1) (rs r2) rs m)) m
++    if check_compare_ints (rs r1) (rs r2) m
++    then Next (nextinstr (compare_ints (rs r1) (rs r2) rs m)) m
++    else Stuck
+   | Pcmpq_rr r1 r2 =>
+       Next (nextinstr (compare_longs (rs r1) (rs r2) rs m)) m
+   | Pcmpl_ri r1 n =>
+-      Next (nextinstr (compare_ints (rs r1) (Vint n) rs m)) m
++    if check_compare_ints (rs r1) (Vint n) m 
++    then Next (nextinstr (compare_ints (rs r1) (Vint n) rs m)) m
++    else Stuck
+   | Pcmpq_ri r1 n =>
+       Next (nextinstr (compare_longs (rs r1) (Vlong n) rs m)) m
+   | Ptestl_rr r1 r2 =>
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/x86/Asmgenproof1.v ./cascompcert/x86/Asmgenproof1.v
+--- ./CompCert/x86/Asmgenproof1.v	2026-06-15 17:46:22.021582642 -0500
++++ ./cascompcert/x86/Asmgenproof1.v	2026-06-12 16:31:23.218595683 -0500
+@@ -964,123 +964,156 @@
+   unfold compare_floats32; destruct vx; destruct vy; auto. Simplifs.
+ Qed.
+ 
++Lemma cmp_bool_check_compare_ints:
++  forall c v1 v2 b m,
++    Val.cmp_bool c v1 v2 = Some b ->
++    check_compare_ints v1 v2 m = true.
++Proof.
++  destruct v1, v2; simpl; try discriminate; auto.
++Qed.
++
++Lemma cmpu_bool_check_compare_ints:
++  forall c v1 v2 b m,
++    Val.cmpu_bool (Mem.valid_pointer m) c v1 v2 = Some b ->
++    check_compare_ints v1 v2 m = true.
++Proof.
++  unfold check_compare_ints.
++  destruct v1 eqn:H1, v2 eqn:H2; simpl; try discriminate; auto;
++    (intros b' m; destruct Archi.ptr64; [discriminate|]; intro);
++    repeat match goal with
++           | H: match ?A with _ => _ end = _ |- _ =>
++             destruct A; try discriminate; auto
++           end.
++Qed.
++
+ Lemma transl_cond_correct:
+   forall cond args k c rs m,
+   transl_cond cond args k = OK c ->
+   exists rs',
+-     exec_straight ge fn c rs m k rs' m
+-  /\ match eval_condition cond (map rs (map preg_of args)) m with
++    match eval_condition cond (map rs (map preg_of args)) m with    
+      | None => True
+-     | Some b => eval_extcond (testcond_for_condition cond) rs' = Some b
+-     end
+-  /\ forall r, data_preg r = true -> rs'#r = rs r.
++     | Some b =>
++      exec_straight ge fn c rs m k rs' m /\ 
++      eval_extcond (testcond_for_condition cond) rs' = Some b /\
++      forall r, data_preg r = true -> rs'#r = rs r
++    end.
+ Proof.
+   unfold transl_cond; intros.
+   destruct cond; repeat (destruct args; try discriminate); monadInv H.
+ - (* comp *)
+   simpl. rewrite (ireg_of_eq _ _ EQ). rewrite (ireg_of_eq _ _ EQ1).
+-  econstructor. split. apply exec_straight_one. simpl. eauto. auto.
+-  split. destruct (Val.cmp_bool c0 (rs x) (rs x0)) eqn:?; auto.
+-  eapply testcond_for_signed_comparison_32_correct; eauto.
++  destruct (Val.cmp_bool c0 (rs x) (rs x0)) eqn:?; [| eexists; eauto].
++  econstructor. split. 
++  apply exec_straight_one. simpl. erewrite cmp_bool_check_compare_ints; eauto. eauto.
++  split. eapply testcond_for_signed_comparison_32_correct; eauto.
+   intros. unfold compare_ints. Simplifs.
+ - (* compu *)
+   simpl. rewrite (ireg_of_eq _ _ EQ). rewrite (ireg_of_eq _ _ EQ1).
+-  econstructor. split. apply exec_straight_one. simpl. eauto. auto.
+-  split. destruct (Val.cmpu_bool (Mem.valid_pointer m) c0 (rs x) (rs x0)) eqn:?; auto.
+-  eapply testcond_for_unsigned_comparison_32_correct; eauto.
++  destruct (Val.cmpu_bool (Mem.valid_pointer m) c0 (rs x) (rs x0)) eqn:?; [| eexists; eauto].  
++  econstructor. split. 
++  apply exec_straight_one. simpl. erewrite cmpu_bool_check_compare_ints; eauto. auto.
++  split. eapply testcond_for_unsigned_comparison_32_correct; eauto.
+   intros. unfold compare_ints. Simplifs.
+ - (* compimm *)
+-  simpl. rewrite (ireg_of_eq _ _ EQ). destruct (Int.eq_dec n Int.zero).
++  simpl. rewrite (ireg_of_eq _ _ EQ).
++  destruct (Val.cmp_bool c0 (rs x) (Vint n)) eqn:?; [| eauto].
++  destruct (Int.eq_dec n Int.zero).
+   econstructor; split. apply exec_straight_one. simpl; eauto. auto.
+-  split. destruct (rs x); simpl; auto. subst. rewrite Int.and_idem.
++  split. subst. destruct (rs x); simpl in *; inv Heqo. rewrite Int.and_idem.
+   eapply testcond_for_signed_comparison_32_correct; eauto.
+   intros. unfold compare_ints. Simplifs.
+   econstructor; split. apply exec_straight_one. simpl; eauto. auto.
+-  split. destruct (Val.cmp_bool c0 (rs x) (Vint n)) eqn:?; auto.
+-  eapply testcond_for_signed_comparison_32_correct; eauto.
++  erewrite cmp_bool_check_compare_ints; eauto. auto.
++  split. eapply testcond_for_signed_comparison_32_correct; eauto.
+   intros. unfold compare_ints. Simplifs.
+ - (* compuimm *)
+   simpl. rewrite (ireg_of_eq _ _ EQ).
+-  econstructor. split. apply exec_straight_one. simpl. eauto. auto.
+-  split. destruct (Val.cmpu_bool (Mem.valid_pointer m) c0 (rs x) (Vint n)) eqn:?; auto.
+-  eapply testcond_for_unsigned_comparison_32_correct; eauto.
++  destruct (Val.cmpu_bool (Mem.valid_pointer m) c0 (rs x) (Vint n)) eqn:?; [|eauto].
++  econstructor. split. apply exec_straight_one. simpl.
++  erewrite cmpu_bool_check_compare_ints; eauto. eauto. 
++  split. eapply testcond_for_unsigned_comparison_32_correct; eauto.
+   intros. unfold compare_ints. Simplifs.
+ - (* compl *)
+   simpl. rewrite (ireg_of_eq _ _ EQ). rewrite (ireg_of_eq _ _ EQ1).
++  destruct (Val.cmpl_bool c0 (rs x) (rs x0)) eqn:?; eauto.
+   econstructor. split. apply exec_straight_one. simpl. eauto. auto.
+-  split. destruct (Val.cmpl_bool c0 (rs x) (rs x0)) eqn:?; auto.
++  split. 
+   eapply testcond_for_signed_comparison_64_correct; eauto.
+   intros. unfold compare_longs. Simplifs.
+ - (* complu *)
+   simpl. rewrite (ireg_of_eq _ _ EQ). rewrite (ireg_of_eq _ _ EQ1).
++  destruct (Val.cmplu_bool (Mem.valid_pointer m) c0 (rs x) (rs x0)) eqn:?; eauto.  
+   econstructor. split. apply exec_straight_one. simpl. eauto. auto.
+-  split. destruct (Val.cmplu_bool (Mem.valid_pointer m) c0 (rs x) (rs x0)) eqn:?; auto.
+-  eapply testcond_for_unsigned_comparison_64_correct; eauto.
++  split. eapply testcond_for_unsigned_comparison_64_correct; eauto.
+   intros. unfold compare_longs. Simplifs.
+ - (* compimm *)
+-  simpl. rewrite (ireg_of_eq _ _ EQ). destruct (Int64.eq_dec n Int64.zero).
++  simpl. rewrite (ireg_of_eq _ _ EQ).
++  destruct (Val.cmpl_bool c0 (rs x) (Vlong n)) eqn:?; eauto.
++  destruct (Int64.eq_dec n Int64.zero).
+   econstructor; split. apply exec_straight_one. simpl; eauto. auto.
+-  split. destruct (rs x); simpl; auto. subst. rewrite Int64.and_idem.
++  split. destruct (rs x); try discriminate. subst. simpl. rewrite Int64.and_idem.
+   eapply testcond_for_signed_comparison_64_correct; eauto.
+   intros. unfold compare_longs. Simplifs.
+   econstructor; split. apply exec_straight_one. simpl; eauto. auto.
+-  split. destruct (Val.cmpl_bool c0 (rs x) (Vlong n)) eqn:?; auto.
++  split. 
+   eapply testcond_for_signed_comparison_64_correct; eauto.
+   intros. unfold compare_longs. Simplifs.
+ - (* compuimm *)
+   simpl. rewrite (ireg_of_eq _ _ EQ).
++  destruct (Val.cmplu_bool (Mem.valid_pointer m) c0 (rs x) (Vlong n)) eqn:?; eauto.
+   econstructor. split. apply exec_straight_one. simpl. eauto. auto.
+-  split. destruct (Val.cmplu_bool (Mem.valid_pointer m) c0 (rs x) (Vlong n)) eqn:?; auto.
+-  eapply testcond_for_unsigned_comparison_64_correct; eauto.
++  split. eapply testcond_for_unsigned_comparison_64_correct; eauto.
+   intros. unfold compare_longs. Simplifs.
+ - (* compf *)
+   simpl. rewrite (freg_of_eq _ _ EQ). rewrite (freg_of_eq _ _ EQ1).
+   exists (nextinstr (compare_floats (swap_floats c0 (rs x) (rs x0)) (swap_floats c0 (rs x0) (rs x)) rs)).
+-  split. apply exec_straight_one.
+-  destruct c0; simpl; auto.
++  destruct (Val.cmpf_bool c0 (rs x) (rs x0)) eqn:A; eauto.
++  split. apply exec_straight_one. destruct c0; simpl; auto.
+   unfold nextinstr. rewrite Pregmap.gss. rewrite compare_floats_inv; auto with asmgen.
+-  split. destruct (rs x); destruct (rs x0); simpl; auto.
+-  repeat rewrite swap_floats_commut. apply testcond_for_float_comparison_correct.
++  split. destruct (rs x), (rs x0); inv A. repeat rewrite swap_floats_commut.
++  apply testcond_for_float_comparison_correct.
+   intros. Simplifs. apply compare_floats_inv; auto with asmgen.
+ - (* notcompf *)
+   simpl. rewrite (freg_of_eq _ _ EQ). rewrite (freg_of_eq _ _ EQ1).
+   exists (nextinstr (compare_floats (swap_floats c0 (rs x) (rs x0)) (swap_floats c0 (rs x0) (rs x)) rs)).
+-  split. apply exec_straight_one.
+-  destruct c0; simpl; auto.
++  destruct (Val.cmpf_bool c0 (rs x) (rs x0)) eqn:A; simpl; eauto.
++  split. apply exec_straight_one. destruct c0; simpl; auto.
+   unfold nextinstr. rewrite Pregmap.gss. rewrite compare_floats_inv; auto with asmgen.
+-  split. destruct (rs x); destruct (rs x0); simpl; auto.
++  split. destruct (rs x); destruct (rs x0); inv A. 
+   repeat rewrite swap_floats_commut. apply testcond_for_neg_float_comparison_correct.
+   intros. Simplifs. apply compare_floats_inv; auto with asmgen.
+ - (* compfs *)
+   simpl. rewrite (freg_of_eq _ _ EQ). rewrite (freg_of_eq _ _ EQ1).
+   exists (nextinstr (compare_floats32 (swap_floats c0 (rs x) (rs x0)) (swap_floats c0 (rs x0) (rs x)) rs)).
+-  split. apply exec_straight_one.
+-  destruct c0; simpl; auto.
++  destruct (Val.cmpfs_bool c0 (rs x) (rs x0)) eqn:A; eauto.
++  split. apply exec_straight_one. destruct c0; simpl; auto.
+   unfold nextinstr. rewrite Pregmap.gss. rewrite compare_floats32_inv; auto with asmgen.
+-  split. destruct (rs x); destruct (rs x0); simpl; auto.
++  split. destruct (rs x); destruct (rs x0); inv A.
+   repeat rewrite swap_floats_commut. apply testcond_for_float32_comparison_correct.
+   intros. Simplifs. apply compare_floats32_inv; auto with asmgen.
+ - (* notcompfs *)
+   simpl. rewrite (freg_of_eq _ _ EQ). rewrite (freg_of_eq _ _ EQ1).
+   exists (nextinstr (compare_floats32 (swap_floats c0 (rs x) (rs x0)) (swap_floats c0 (rs x0) (rs x)) rs)).
+-  split. apply exec_straight_one.
+-  destruct c0; simpl; auto.
++  destruct (Val.cmpfs_bool c0 (rs x) (rs x0)) eqn:A; simpl; eauto.
++  split. apply exec_straight_one. destruct c0; simpl; auto.
+   unfold nextinstr. rewrite Pregmap.gss. rewrite compare_floats32_inv; auto with asmgen.
+-  split. destruct (rs x); destruct (rs x0); simpl; auto.
++  split. destruct (rs x); destruct (rs x0); inv A.
+   repeat rewrite swap_floats_commut. apply testcond_for_neg_float32_comparison_correct.
+   intros. Simplifs. apply compare_floats32_inv; auto with asmgen.
+ - (* maskzero *)
+   simpl. rewrite (ireg_of_eq _ _ EQ).
++  destruct (Val.maskzero_bool (rs x) n) eqn:A; simpl; eauto.
+   econstructor. split. apply exec_straight_one. simpl; eauto. auto.
+-  split. destruct (rs x); simpl; auto.
+-  generalize (compare_ints_spec rs (Vint (Int.and i n)) Vzero m).
++  split. destruct (rs x); inv A; simpl. 
++  generalize (compare_ints_spec rs (Vint (Int.and i n)) Vzero m); simpl.
+   intros [A B]. rewrite A. unfold Val.cmpu; simpl. destruct (Int.eq (Int.and i n) Int.zero); auto.
+   intros. unfold compare_ints. Simplifs.
+ - (* masknotzero *)
+   simpl. rewrite (ireg_of_eq _ _ EQ).
++  destruct (Val.maskzero_bool (rs x) n) eqn:A; simpl; eauto.
+   econstructor. split. apply exec_straight_one. simpl; eauto. auto.
+-  split. destruct (rs x); simpl; auto.
+-  generalize (compare_ints_spec rs (Vint (Int.and i n)) Vzero m).
++  split. destruct (rs x); inv A.
++  generalize (compare_ints_spec rs (Vint (Int.and i n)) Vzero m); simpl.
+   intros [A B]. rewrite A. unfold Val.cmpu; simpl. destruct (Int.eq (Int.and i n) Int.zero); auto.
+   intros. unfold compare_ints. Simplifs.
+ Qed.
+@@ -1388,13 +1421,15 @@
+ (* singleoflong *)
+   apply SAME. TranslOp. rewrite H0; auto.
+ (* condition *)
+-  exploit transl_cond_correct; eauto. intros [rs2 [P [Q R]]].
++  exploit transl_cond_correct. eauto. intros [rs2 C].
++  instantiate (1:= rs) in C. instantiate (1:=m) in C. 
++  destruct (eval_condition cond rs ## (preg_of ## args) m) eqn:A; [inv H0|discriminate]. unfold PregEq.t in A.
++  rewrite A in C. destruct C as [P [Q R]].
+   exploit mk_setcc_correct; eauto. intros [rs3 [S [T U]]].
+   exists rs3.
+   split. eapply exec_straight_trans. eexact P. eexact S.
+-  split. rewrite T. destruct (eval_condition cond rs ## (preg_of ## args) m).
+-  rewrite Q. auto.
+-  simpl; auto.
++  split. rewrite T. 
++  rewrite Q. simpl. auto.
+   intros. transitivity (rs2 r); auto.
+ Qed.
+ 
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/x86/CombineOpproof.v ./cascompcert/x86/CombineOpproof.v
+--- ./CompCert/x86/CombineOpproof.v	2026-06-15 17:46:22.021582642 -0500
++++ ./cascompcert/x86/CombineOpproof.v	2026-06-12 16:10:52.981290983 -0500
+@@ -47,8 +47,9 @@
+ Proof.
+   intros until args. functional induction (combine_compimm_ne_0 get x); intros EQ; inv EQ.
+   (* of cmp *)
+-  UseGetSound. rewrite <- H.
+-  destruct (eval_condition cond (map valu args) m); simpl; auto. destruct b; auto.
++  UseGetSound. 
++  destruct (eval_condition cond (map valu args) m); simpl; [inv EQ|discriminate].
++  destruct b; auto.
+   (* of and *)
+   UseGetSound. rewrite <- H.
+   destruct v; simpl; auto.
+@@ -62,9 +63,9 @@
+ Proof.
+   intros until args. functional induction (combine_compimm_eq_0 get x); intros EQ; inv EQ.
+   (* of cmp *)
+-  UseGetSound. rewrite <- H.
++  UseGetSound.
+   rewrite eval_negate_condition.
+-  destruct (eval_condition c (map valu args) m); simpl; auto. destruct b; auto.
++  destruct (eval_condition c (map valu args) m); simpl; [inv EQ|discriminate]. destruct b; auto.
+   (* of and *)
+   UseGetSound. rewrite <- H. destruct v; auto.
+ Qed.
+@@ -77,8 +78,8 @@
+ Proof.
+   intros until args. functional induction (combine_compimm_eq_1 get x); intros EQ; inv EQ.
+   (* of cmp *)
+-  UseGetSound. rewrite <- H.
+-  destruct (eval_condition cond (map valu args) m); simpl; auto. destruct b; auto.
++  UseGetSound. 
++  destruct (eval_condition cond (map valu args) m); simpl; [inv EQ|discriminate]. destruct b; auto.
+ Qed.
+ 
+ Lemma combine_compimm_ne_1_sound:
+@@ -89,9 +90,9 @@
+ Proof.
+   intros until args. functional induction (combine_compimm_ne_1 get x); intros EQ; inv EQ.
+   (* of cmp *)
+-  UseGetSound. rewrite <- H.
++  UseGetSound. 
+   rewrite eval_negate_condition.
+-  destruct (eval_condition c (map valu args) m); simpl; auto. destruct b; auto.
++  destruct (eval_condition c (map valu args) m); simpl; [inv EQ|discriminate]. destruct b; auto.
+ Qed.
+ 
+ Theorem combine_cond_sound:
+@@ -173,7 +174,7 @@
+ (* xorimm - xorimm *)
+   UseGetSound; simpl. rewrite <- H0. rewrite Val.xorl_assoc. auto.
+ (* cmp *)
+-  simpl. decEq; decEq. eapply combine_cond_sound; eauto.
++  simpl. erewrite combine_cond_sound; eauto.
+ Qed.
+ 
+ End COMBINE.
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/x86/ConstpropOpproof.v ./cascompcert/x86/ConstpropOpproof.v
+--- ./CompCert/x86/ConstpropOpproof.v	2026-06-15 17:46:22.021929547 -0500
++++ ./cascompcert/x86/ConstpropOpproof.v	2026-06-12 16:31:23.218732675 -0500
+@@ -297,26 +297,28 @@
+ Qed.
+ 
+ Lemma make_cmp_base_correct:
+-  forall c args vl,
++  forall c args vl b,
+   vl = map (fun r => AE.get r ae) args ->
++  eval_condition c e##args m = Some b ->
+   let (op', args') := make_cmp_base c args vl in
+   exists v, eval_operation ge (Vptr sp Ptrofs.zero) op' e##args' m = Some v
+-         /\ Val.lessdef (Val.of_optbool (eval_condition c e##args m)) v.
++         /\ Val.lessdef (Val.of_bool b) v.
+ Proof.
+   intros. unfold make_cmp_base.
+   generalize (cond_strength_reduction_correct c args vl H).
+   destruct (cond_strength_reduction c args vl) as [c' args']. intros EQ.
+-  econstructor; split. simpl; eauto. rewrite EQ. auto.
++  econstructor; split;[|eauto]. simpl. rewrite EQ, H0. auto.
+ Qed.
+ 
+ Lemma make_cmp_correct:
+-  forall c args vl,
++  forall c args vl b,
+   vl = map (fun r => AE.get r ae) args ->
++  (eval_condition c e##args m) = Some b ->
+   let (op', args') := make_cmp c args vl in
+   exists v, eval_operation ge (Vptr sp Ptrofs.zero) op' e##args' m = Some v
+-         /\ Val.lessdef (Val.of_optbool (eval_condition c e##args m)) v.
++         /\ Val.lessdef (Val.of_bool b) v.
+ Proof.
+-  intros c args vl.
++  intros c args vl b.
+   assert (Y: forall r, vincl (AE.get r ae) (Uns Ptop 1) = true ->
+              e#r = Vundef \/ e#r = Vint Int.zero \/ e#r = Vint Int.one).
+   { intros. apply vmatch_Uns_1 with bc Ptop. eapply vmatch_ge. eapply vincl_ge; eauto. apply MATCH. }
+@@ -325,19 +327,31 @@
+   simpl in H; inv H. InvBooleans. subst n.
+   exists (e#r1); split; auto. simpl.
+   exploit Y; eauto. intros [A | [A | A]]; rewrite A; simpl; auto.
++  simpl in H0; rewrite A in H0. discriminate.
++  simpl in H0; rewrite A in H0. simpl in H0. inv H0. auto.
++  simpl in H0; rewrite A in H0. simpl in H0. inv H0. auto.
+   destruct (Int.eq_dec n Int.zero && vincl v1 (Uns Ptop 1)) eqn:E0.
+   simpl in H; inv H. InvBooleans. subst n.
+   exists (Val.xor e#r1 (Vint Int.one)); split; auto. simpl.
+   exploit Y; eauto. intros [A | [A | A]]; rewrite A; simpl; auto.
++  simpl in H0; rewrite A in H0. discriminate.
++  simpl in H0; rewrite A in H0. simpl in H0. inv H0. auto.
++  simpl in H0; rewrite A in H0. simpl in H0. inv H0. auto.  
+   apply make_cmp_base_correct; auto.
+ - destruct (Int.eq_dec n Int.zero && vincl v1 (Uns Ptop 1)) eqn:E0.
+   simpl in H; inv H. InvBooleans. subst n.
+   exists (e#r1); split; auto. simpl.
+   exploit Y; eauto. intros [A | [A | A]]; rewrite A; simpl; auto.
++  simpl in H0; rewrite A in H0. discriminate.
++  simpl in H0; rewrite A in H0. simpl in H0. inv H0. auto.
++  simpl in H0; rewrite A in H0. simpl in H0. inv H0. auto.
+   destruct (Int.eq_dec n Int.one && vincl v1 (Uns Ptop 1)) eqn:E1.
+   simpl in H; inv H. InvBooleans. subst n.
+   exists (Val.xor e#r1 (Vint Int.one)); split; auto. simpl.
+   exploit Y; eauto. intros [A | [A | A]]; rewrite A; simpl; auto.
++  simpl in H0; rewrite A in H0. discriminate.
++  simpl in H0; rewrite A in H0. simpl in H0. inv H0. auto.
++  simpl in H0; rewrite A in H0. simpl in H0. inv H0. auto.
+   apply make_cmp_base_correct; auto.
+ - apply make_cmp_base_correct; auto.
+ Qed.
+@@ -867,7 +881,8 @@
+   destruct (addr_strength_reduction_64 addr args0 vl0) as [addr' args'].
+   auto.
+ (* cond *)
+-  inv H0. apply make_cmp_correct; auto.
++  inv H0. destruct (eval_condition c e ## args0 m) eqn:?; [|discriminate].
++  simpl in H2; inv H2. apply make_cmp_correct; auto.
+ (* mulf *)
+   InvApproxRegs; SimplVM; inv H0. rewrite <- H2. apply make_mulfimm_correct; auto.
+   InvApproxRegs; SimplVM; inv H0. fold (Val.mulf (Vfloat n1) e#r2).
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/x86/NeedOp.v ./cascompcert/x86/NeedOp.v
+--- ./CompCert/x86/NeedOp.v	2026-06-15 17:46:22.022068297 -0500
++++ ./cascompcert/x86/NeedOp.v	2026-06-12 16:31:23.218918266 -0500
+@@ -227,10 +227,9 @@
+     with (eval_operation ge (Vptr sp Ptrofs.zero) (Oleal a) args' m').
+   eapply default_needs_of_operation_sound; eauto. 
+   destruct a; simpl in H0; auto.
+-- destruct (eval_condition cond args m) as [b|] eqn:EC; simpl in H2.
+-  erewrite needs_of_condition_sound by eauto.
+-  subst v; simpl. auto with na.
+-  subst v; auto with na.
++- destruct (eval_condition cond args m) as [b|] eqn:EC; simpl in H.
++  erewrite needs_of_condition_sound by eauto. simpl. eexists. split; eauto. auto with na.
++  discriminate.
+ Qed.
+ 
+ Lemma operation_is_redundant_sound:
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/x86/Op.v ./cascompcert/x86/Op.v
+--- ./CompCert/x86/Op.v	2026-06-15 17:46:22.022285168 -0500
++++ ./cascompcert/x86/Op.v	2026-06-12 16:10:52.983029249 -0500
+@@ -385,7 +385,7 @@
+   | Ofloatoflong, v1::nil => Val.floatoflong v1
+   | Olongofsingle, v1::nil => Val.longofsingle v1
+   | Osingleoflong, v1::nil => Val.singleoflong v1
+-  | Ocmp c, _ => Some(Val.of_optbool (eval_condition c vl m))
++  | Ocmp c, _ => option_map Val.of_bool (eval_condition c vl m)
+   | _, _ => None
+   end.
+ 
+@@ -713,7 +713,9 @@
+   destruct v0; simpl in H0; inv H0...
+   destruct v0; simpl in H0; inv H0. destruct (Float32.to_long f); inv H2...
+   destruct v0; simpl in H0; inv H0...
+-  destruct (eval_condition cond vl m); simpl... destruct b...
++
++  unfold option_map, Val.of_bool in H0. destruct (eval_condition cond vl m); FuncInv; simpl... 
++  destruct b; subst; simpl; auto.
+ Qed.
+ 
+ End SOUNDNESS.
+@@ -1265,10 +1267,11 @@
+   inv H4; simpl in H1; inv H1. simpl. destruct (Float32.to_long f0); simpl in H2; inv H2.
+   exists (Vlong i); auto.
+   inv H4; simpl in H1; inv H1. simpl. TrivialExists.
+-  subst v1. destruct (eval_condition cond vl1 m1) eqn:?.
++
++  unfold option_map, Val.of_bool in H1|-* . destruct (eval_condition cond vl1 m1) eqn:?.
+   exploit eval_condition_inj; eauto. intros EQ; rewrite EQ.
+-  destruct b; simpl; constructor.
+-  simpl; constructor.
++  exists v1. split; auto. destruct b; inv H1; simpl; try constructor.
++  discriminate.
+ Qed.
+ 
+ End EVAL_COMPAT.
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/x86/SelectOpproof.v ./cascompcert/x86/SelectOpproof.v
+--- ./CompCert/x86/SelectOpproof.v	2026-06-15 17:46:22.022563196 -0500
++++ ./cascompcert/x86/SelectOpproof.v	2026-06-12 16:10:52.979823958 -0500
+@@ -614,115 +614,137 @@
+   red; intros; TrivialExists.
+ Qed.
+ 
+-Section COMP_IMM.
++(** My Modification:
++    stop using Val.cmpu, use [option_map Val.of_bool Val.cmpu_bool] instead. *)
++Section COMP_IMM_OPT.
+ 
+ Variable default: comparison -> int -> condition.
+ Variable intsem: comparison -> int -> int -> bool.
+-Variable sem: comparison -> val -> val -> val.
++Variable sem: comparison -> val -> val -> option val.
+ 
+-Hypothesis sem_int: forall c x y, sem c (Vint x) (Vint y) = Val.of_bool (intsem c x y).
+-Hypothesis sem_undef: forall c v, sem c Vundef v = Vundef.
+-Hypothesis sem_eq: forall x y, sem Ceq (Vint x) (Vint y) = Val.of_bool (Int.eq x y).
+-Hypothesis sem_ne: forall x y, sem Cne (Vint x) (Vint y) = Val.of_bool (negb (Int.eq x y)).
+-Hypothesis sem_default: forall c v n, sem c v (Vint n) = Val.of_optbool (eval_condition (default c n) (v :: nil) m).
++Hypothesis sem_int: forall c x y, sem c (Vint x) (Vint y) = Some (Val.of_bool (intsem c x y)).
++(* Hypothesis sem_undef: forall c v, sem c Vundef v = Some (Vundef). *)
++Hypothesis sem_eq: forall x y, sem Ceq (Vint x) (Vint y) = Some (Val.of_bool (Int.eq x y)).
++Hypothesis sem_ne: forall x y, sem Cne (Vint x) (Vint y) = Some (Val.of_bool (negb (Int.eq x y))).
++Hypothesis sem_default: forall c v n, sem c v (Vint n) = option_map Val.of_bool (eval_condition (default c n) (v :: nil) m).
+ 
+-Lemma eval_compimm:
+-  forall le c a n2 x,
++Lemma eval_compimm_opt:
++  forall le c a n2 x y,
+   eval_expr ge sp e m le a x ->
++  sem c x (Vint n2) = Some y ->
+   exists v, eval_expr ge sp e m le (compimm default intsem c a n2) v
+-         /\ Val.lessdef (sem c x (Vint n2)) v.
++         /\ Val.lessdef y v.
+ Proof.
+   intros until x.
+-  unfold compimm; case (compimm_match c a); intros.
++  unfold compimm; case (compimm_match c a); intros ? ? y EVAL RES.
+ - (* constant *)
+-  InvEval. rewrite sem_int. TrivialExists. simpl. destruct (intsem c0 n1 n2); auto.
++  InvEval. rewrite sem_int in RES. TrivialExists. simpl. destruct (intsem c0 n1 n2); auto.
+ - (* eq cmp *)
+-  InvEval. inv H. simpl in H5. inv H5.
+-  destruct (Int.eq_dec n2 Int.zero). subst n2. TrivialExists.
+-  simpl. rewrite eval_negate_condition.
+-  destruct (eval_condition c0 vl m); simpl.
+-  unfold Vtrue, Vfalse. destruct b; simpl; rewrite sem_eq; auto.
+-  rewrite sem_undef; auto.
+-  destruct (Int.eq_dec n2 Int.one). subst n2. TrivialExists.
++  InvEval. inv EVAL. simpl in H4. 
++  destruct (Int.eq_dec n2 Int.zero).
++
++  subst n2. TrivialExists. simpl. rewrite eval_negate_condition. 
++  destruct (eval_condition c0 vl m); simpl in *; [|discriminate].
++  destruct b; inv H4; simpl; unfold Vtrue, Vfalse in *; rewrite sem_eq in RES; auto.
++
++  destruct (Int.eq_dec n2 Int.one). subst n2. TrivialExists. 
+   simpl. destruct (eval_condition c0 vl m); simpl.
+-  unfold Vtrue, Vfalse. destruct b; simpl; rewrite sem_eq; auto.
+-  rewrite sem_undef; auto.
++  unfold Val.of_bool, Vtrue, Vfalse in *. destruct b; inv H4; simpl in *; rewrite sem_eq in RES; auto. 
++  discriminate.
++
+   exists (Vint Int.zero); split. EvalOp.
+   destruct (eval_condition c0 vl m); simpl.
+-  unfold Vtrue, Vfalse. destruct b; rewrite sem_eq; rewrite Int.eq_false; auto.
+-  rewrite sem_undef; auto.
++  unfold Val.of_bool, Vtrue, Vfalse in *.
++  destruct b; inv H4; rewrite sem_eq in RES; rewrite Int.eq_false in RES; inv RES; auto.
++  discriminate.
++
+ - (* ne cmp *)
+-  InvEval. inv H. simpl in H5. inv H5.
++  InvEval. inv EVAL. simpl in H4. 
+   destruct (Int.eq_dec n2 Int.zero). subst n2. TrivialExists.
+-  simpl. destruct (eval_condition c0 vl m); simpl.
+-  unfold Vtrue, Vfalse. destruct b; simpl; rewrite sem_ne; auto.
+-  rewrite sem_undef; auto.
++  simpl. unfold Val.of_bool, Vtrue, Vfalse in *. destruct (eval_condition c0 vl m); simpl; [|discriminate].
++  destruct b; simpl; inv H4; rewrite sem_ne in RES; auto.
++
+   destruct (Int.eq_dec n2 Int.one). subst n2. TrivialExists.
+-  simpl. rewrite eval_negate_condition. destruct (eval_condition c0 vl m); simpl.
+-  unfold Vtrue, Vfalse. destruct b; simpl; rewrite sem_ne; auto.
+-  rewrite sem_undef; auto.
++  simpl. unfold Val.of_bool, Vtrue, Vfalse in *. rewrite eval_negate_condition. destruct (eval_condition c0 vl m); simpl.
++  destruct b; simpl; inv H4; rewrite sem_ne in RES; auto.
++  discriminate.
++  
+   exists (Vint Int.one); split. EvalOp.
+   destruct (eval_condition c0 vl m); simpl.
+-  unfold Vtrue, Vfalse. destruct b; rewrite sem_ne; rewrite Int.eq_false; auto.
+-  rewrite sem_undef; auto.
++  unfold Val.of_bool, Vtrue, Vfalse in *. destruct b; inv H4; rewrite sem_ne, Int.eq_false in RES; inv RES; auto.
++  discriminate.
++  
+ - (* eq andimm *)
+-  destruct (Int.eq_dec n2 Int.zero). InvEval; subst.
+-  econstructor; split. EvalOp. simpl; eauto.
+-  destruct v1; simpl; try (rewrite sem_undef; auto). rewrite sem_eq.
+-  destruct (Int.eq (Int.and i n1) Int.zero); auto.
+-  TrivialExists. simpl. rewrite sem_default. auto.
++  destruct (Int.eq_dec n2 Int.zero).
++  + InvEval; subst. destruct v1; simpl in *;
++                      try (rewrite sem_default in RES; simpl in RES; destruct default; simpl in RES; discriminate).
++
++    rewrite sem_eq in RES; simpl in RES.
++    destruct (Int.eq (Int.and i n1) Int.zero) eqn:RES'; inv RES; (eexists; split; [EvalOp; cbn; rewrite RES'|];eauto).
++  + TrivialExists. simpl in *. rewrite sem_default in RES. auto.
++    
+ - (* ne andimm *)
+   destruct (Int.eq_dec n2 Int.zero). InvEval; subst.
++  destruct v1; simpl in *;
++    try (rewrite sem_default in RES; simpl in RES; destruct default; simpl in RES; discriminate; fail).
+   econstructor; split. EvalOp. simpl; eauto.
+-  destruct v1; simpl; try (rewrite sem_undef; auto). rewrite sem_ne.
+-  destruct (Int.eq (Int.and i n1) Int.zero); auto.
+-  TrivialExists. simpl. rewrite sem_default. auto.
++  rewrite sem_ne in RES; inv RES. auto.
++  TrivialExists. simpl in *. rewrite sem_default in RES. auto.
+ - (* default *)
+-  TrivialExists. simpl. rewrite sem_default. auto.
++  TrivialExists. simpl. rewrite sem_default in RES. auto.
+ Qed.
+ 
+ Hypothesis sem_swap:
+   forall c x y, sem (swap_comparison c) x y = sem c y x.
+ 
+-Lemma eval_compimm_swap:
+-  forall le c a n2 x,
+-  eval_expr ge sp e m le a x ->
++Lemma eval_compimm_swap_opt:
++  forall le c a n2 x y,
++    eval_expr ge sp e m le a x ->
++    sem c (Vint n2) x = Some y ->
+   exists v, eval_expr ge sp e m le (compimm default intsem (swap_comparison c) a n2) v
+-         /\ Val.lessdef (sem c (Vint n2) x) v.
++         /\ Val.lessdef y v.
+ Proof.
+-  intros. rewrite <- sem_swap. eapply eval_compimm; eauto.
++  intros. rewrite <- sem_swap in H0. eapply eval_compimm_opt; eauto.
+ Qed.
+ 
+-End COMP_IMM.
++End COMP_IMM_OPT.
++
++Definition binary_constructor_sound_opt (cstr: expr -> expr -> expr) (sem: val -> val -> option val) :=
++  forall le a x b y z,
++    eval_expr ge sp e m le a x ->
++    eval_expr ge sp e m le b y ->
++    sem x y = Some z ->
++    exists v, eval_expr ge sp e m le (cstr a b) v /\ Val.lessdef z v.
+ 
+-Theorem eval_comp:
+-  forall c, binary_constructor_sound (comp c) (Val.cmp c).
++Theorem eval_comp_opt:
++  forall c, binary_constructor_sound_opt (comp c) (fun v1 v2 => option_map Val.of_bool (Val.cmp_bool c v1 v2)).
+ Proof.
+   intros; red; intros until y. unfold comp; case (comp_match a b); intros; InvEval.
+-  eapply eval_compimm_swap; eauto.
+-  intros. unfold Val.cmp. rewrite Val.swap_cmp_bool; auto.
+-  eapply eval_compimm; eauto.
++  eapply eval_compimm_swap_opt with (sem:= (fun c v1 v2 => option_map Val.of_bool (Val.cmp_bool c v1 v2))); eauto.
++  intros. rewrite Val.swap_cmp_bool; auto.
++  eapply eval_compimm_opt with (sem:=fun c v1 v2 => option_map Val.of_bool (Val.cmp_bool c v1 v2)); eauto.
+   TrivialExists.
+ Qed.
+ 
+-Theorem eval_compu:
+-  forall c, binary_constructor_sound (compu c) (Val.cmpu (Mem.valid_pointer m) c).
++Theorem eval_compu_opt:
++  forall c, binary_constructor_sound_opt (compu c) (fun v1 v2 => option_map Val.of_bool (Val.cmpu_bool (Mem.valid_pointer m) c v1 v2)).
+ Proof.
+   intros; red; intros until y. unfold compu; case (compu_match a b); intros; InvEval.
+-  eapply eval_compimm_swap; eauto.
++  eapply eval_compimm_swap_opt
++    with (sem:= fun c v1 v2 => option_map Val.of_bool (Val.cmpu_bool (Mem.valid_pointer m) c v1 v2)); eauto.
+   intros. unfold Val.cmpu. rewrite Val.swap_cmpu_bool; auto.
+-  eapply eval_compimm; eauto.
++  eapply eval_compimm_opt with (sem :=fun c v1 v2 => option_map Val.of_bool (Val.cmpu_bool (Mem.valid_pointer m) c v1 v2)); eauto.
+   TrivialExists.
+ Qed.
+ 
+-Theorem eval_compf:
+-  forall c, binary_constructor_sound (compf c) (Val.cmpf c).
++Theorem eval_compf_opt:
++  forall c, binary_constructor_sound_opt (compf c) (fun v1 v2 => option_map Val.of_bool (Val.cmpf_bool c v1 v2)).
+ Proof.
+-  intros; red; intros. unfold compf. TrivialExists.
++  intros; red; intros. unfold compf. TrivialExists. 
+ Qed.
+ 
+-Theorem eval_compfs:
+-  forall c, binary_constructor_sound (compfs c) (Val.cmpfs c).
++Theorem eval_compfs_opt:
++  forall c, binary_constructor_sound_opt (compfs c) (fun v1 v2 => option_map Val.of_bool (Val.cmpfs_bool c v1 v2)).
+ Proof.
+   intros; red; intros. unfold compfs. TrivialExists.
+ Qed.
+diff --color -ruN '--exclude-from=cascompcert/ccc_patch_exclude' ./CompCert/x86/ValueAOp.v ./cascompcert/x86/ValueAOp.v
+--- ./CompCert/x86/ValueAOp.v	2026-06-15 17:46:22.022750298 -0500
++++ ./cascompcert/x86/ValueAOp.v	2026-06-12 16:10:52.983901038 -0500
+@@ -257,7 +257,9 @@
+   destruct (propagate_float_constants tt); constructor.
+   eapply eval_static_addressing_32_sound; eauto.
+   eapply eval_static_addressing_64_sound; eauto.
+-  apply of_optbool_sound. eapply eval_static_condition_sound; eauto.
++  destruct eval_condition eqn:R; inv H.
++  replace (Val.of_bool b) with (Val.of_optbool (Some b)) by auto.
++  apply of_optbool_sound. rewrite <- R. eapply eval_static_condition_sound; eauto.
+ Qed.
+ 
+ End SOUNDNESS.
