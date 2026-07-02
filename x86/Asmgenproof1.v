@@ -1230,28 +1230,92 @@ Proof.
   intros; Simplifs.
 Qed.
 
+(** [exec_straight] is deterministic: running the same code from the same
+  state to the same continuation yields a unique final state.  This lets us
+  recover, in [transl_sel_correct] below, the "negated condition" fact that
+  CasCompCert's [transl_cond_correct] no longer exposes directly. *)
+
+Lemma exec_straight_length:
+  forall c rs m k rs' m',
+  exec_straight ge fn c rs m k rs' m' -> (length k < length c)%nat.
+Proof.
+  induction 1; simpl; lia.
+Qed.
+
+Lemma exec_straight_det:
+  forall c rs m k rs1 m1,
+  exec_straight ge fn c rs m k rs1 m1 ->
+  forall rs2 m2,
+  exec_straight ge fn c rs m k rs2 m2 ->
+  rs1 = rs2 /\ m1 = m2.
+Proof.
+  induction 1; intros rs2' m2' HS; inv HS.
+- (* one / one *)
+  split; congruence.
+- (* one / step *)
+  match goal with H: exec_straight ge fn ?cc _ _ ?cc _ _ |- _ =>
+    apply exec_straight_length in H end; simpl in *; exfalso; lia.
+- (* step / one *)
+  match goal with H: exec_straight ge fn ?cc _ _ ?cc _ _ |- _ =>
+    apply exec_straight_length in H end; simpl in *; exfalso; lia.
+- (* step / step *)
+  match goal with
+  | A: exec_instr ge fn ?i ?r ?mm = Next ?a ?b,
+    B: exec_instr ge fn ?i ?r ?mm = Next ?c ?d |- _ =>
+      assert (a = c) by congruence; assert (b = d) by congruence; subst
+  end.
+  eapply IHexec_straight; eauto.
+Qed.
+
+(** Code generation for a condition does not depend on the comparison
+  operator, hence is invariant under [negate_condition]. *)
+
+Lemma transl_cond_negate:
+  forall cond args k,
+  transl_cond (negate_condition cond) args k = transl_cond cond args k.
+Proof.
+  intros. destruct cond; reflexivity.
+Qed.
+
 Lemma transl_sel_correct:
-  forall ty cond args rd r2 k c rs m,
+  forall ty cond args rd r2 k c rs m b,
   transl_sel cond args rd r2 k = OK c ->
+  eval_condition cond (map rs (map preg_of args)) m = Some b ->
   exists rs',
      exec_straight ge fn c rs m k rs' m
-  /\ Val.lessdef (Val.select (eval_condition cond (map rs (map preg_of args)) m) rs#rd rs#r2 ty) rs'#rd
+  /\ Val.lessdef (Val.select (Some b) rs#rd rs#r2 ty) rs'#rd
   /\ forall r, data_preg r = true -> r <> rd -> rs'#r = rs r.
 Proof.
-  unfold transl_sel; intros. destruct (ireg_eq rd r2); monadInv H. 
-- econstructor; split. 
+  intros ty cond args rd r2 k c rs m b H EC.
+  unfold transl_sel in H. destruct (ireg_eq rd r2) as [e|n]; monadInv H.
+- (* rd = r2: emitted a plain move *)
+  econstructor; split.
   apply exec_straight_one; reflexivity.
-  split. rewrite nextinstr_inv, Pregmap.gss by auto with asmgen. 
-  destruct eval_condition as [[]|]; simpl; auto using Val.lessdef_normalize.
+  split. rewrite nextinstr_inv, Pregmap.gss by auto with asmgen.
+  simpl. destruct b; apply Val.lessdef_normalize.
   intros; Simplifs.
-(* - destruct (transl_cond_correct _ _ _ _ rs m EQ0) as (rs1 & A & B & C).
-  rewrite <- negate_testcond_for_condition in B.
-  destruct (mk_sel_correct _ ty _ _ _ _ _ rs1 m EQ n B) as (rs2 & D & E & F).
-  exists rs2; split. 
-  eapply exec_straight_trans; eauto. 
-  split. rewrite ! C in E by auto with asmgen. exact E.
-  intros. rewrite F; auto. *)
-Admitted.
+- (* rd <> r2: compare then conditional move *)
+  destruct (transl_cond_correct _ _ _ _ rs m EQ0) as (rs1 & B).
+  rewrite EC in B. destruct B as (A & B1 & P).
+  (* Recover the negated-condition fact via determinism of [exec_straight]. *)
+  destruct (transl_cond_correct (negate_condition cond) args x _ rs m
+             (eq_trans (transl_cond_negate cond args x) EQ0)) as (rs1' & B').
+  rewrite eval_negate_condition, EC in B'. simpl in B'.
+  destruct B' as (A' & B2 & P').
+  destruct (exec_straight_det _ _ _ _ _ _ A _ _ A') as [Ers Emm]. subst rs1'.
+  assert (NB: eval_extcond (negate_extcond (testcond_for_condition cond)) rs1
+              = Some (negb b)).
+  { rewrite negate_testcond_for_condition. exact B2. }
+  destruct (mk_sel_correct _ ty _ _ _ _ (Some b) rs1 m EQ n (conj B1 NB))
+    as (rs2 & D & E & F).
+  exists rs2; split.
+  eapply exec_straight_trans; eauto.
+  split.
+  + replace (rs#rd) with (rs1#rd) by (apply P; auto with asmgen).
+    replace (rs#r2) with (rs1#r2) by (apply P; auto with asmgen).
+    exact E.
+  + intros r Hdata Hne. rewrite F by auto. apply P; auto.
+Qed.
 
 (** Translation of arithmetic operations. *)
 
@@ -1463,9 +1527,18 @@ Transparent destroyed_by_op.
   rewrite Q. simpl. auto.
   intros. transitivity (rs2 r); auto.
 (* selection *)
-  rewrite EQ1. exploit transl_sel_correct; eauto. intros (rs' & A & B & C).
-  exists rs'; split. eexact A. eauto.
-Qed.
+  rewrite EQ1.
+  destruct (eval_condition c0 (map rs (map preg_of args)) m) as [b|] eqn:EC.
++ (* condition defined: reduces to [transl_sel_correct] *)
+  exploit transl_sel_correct. eauto. eexact EC. intros (rs' & A & B & C).
+  exists rs'; split. eexact A. split. eexact B. intros. apply C; auto.
++ (* condition undefined: the 32-bit compare feeding the [cmov] may get
+     [Stuck] (see [check_compare_ints] in [Asm.v]), so no [exec_straight]
+     is available.  Unlike [Ocmp], [eval_operation] for [Osel] does not
+     return [None] here, so this residual obligation cannot be discharged
+     without changing [Op.v]/the Asm semantics.  See [transl_sel_correct]. *)
+  admit.
+Admitted.
 
 (** Translation of memory loads. *)
 
