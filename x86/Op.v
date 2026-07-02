@@ -438,7 +438,7 @@ Definition eval_operation
   | Ofloatoflong, v1::nil => Val.floatoflong v1
   | Olongofsingle, v1::nil => Val.longofsingle v1
   | Osingleoflong, v1::nil => Val.singleoflong v1
-  | Ocmp c, _ => Some(Val.of_optbool (eval_condition c vl m))
+  | Ocmp c, _ => option_map Val.of_bool (eval_condition c vl m)
   | Osel c ty, v1::v2::vl => Some(Val.select (eval_condition c vl m) v1 v2 ty)
   | _, _ => None
   end.
@@ -772,7 +772,9 @@ Proof with (try exact I; try reflexivity).
   destruct v0; simpl in H0; inv H0...
   destruct v0; simpl in H0; inv H0. destruct (Float32.to_long f); inv H2...
   destruct v0; simpl in H0; inv H0...
-  destruct (eval_condition cond vl m); simpl... destruct b...
+
+  unfold option_map, Val.of_bool in H0. destruct (eval_condition cond vl m); FuncInv; simpl...
+  destruct b; subst; simpl; auto.
   unfold Val.select. destruct (eval_condition c vl m). apply Val.normalize_type. exact I.
 Qed.
 
@@ -1029,7 +1031,7 @@ Lemma op_depends_on_memory_correct:
   eval_operation ge sp op args m1 = eval_operation ge sp op args m2.
 Proof.
   intros until m2. destruct op; simpl; try congruence; intros C.
-- f_equal; f_equal; apply condition_depends_on_memory_correct; auto.
+- erewrite condition_depends_on_memory_correct; eauto.
 - destruct args; auto. destruct args; auto.
   rewrite (condition_depends_on_memory_correct c args m1 m2 C).
   auto.
@@ -1346,10 +1348,11 @@ Proof.
   inv H4; simpl in H1; inv H1. simpl. destruct (Float32.to_long f0); simpl in H2; inv H2.
   exists (Vlong i); auto.
   inv H4; simpl in H1; inv H1. simpl. TrivialExists.
-  subst v1. destruct (eval_condition cond vl1 m1) eqn:?.
+
+  unfold option_map, Val.of_bool in H1|-* . destruct (eval_condition cond vl1 m1) eqn:?.
   exploit eval_condition_inj; eauto. intros EQ; rewrite EQ.
-  destruct b; simpl; constructor.
-  simpl; constructor.
+  exists v1. split; auto. destruct b; inv H1; simpl; try constructor.
+  discriminate.
   apply Val.select_inject; auto.  
   destruct (eval_condition c vl1 m1) eqn:?; auto.
   right; symmetry; eapply eval_condition_inj; eauto.

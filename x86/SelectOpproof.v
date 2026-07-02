@@ -618,115 +618,137 @@ Proof.
   red; intros; TrivialExists.
 Qed.
 
-Section COMP_IMM.
+Section COMP_IMM_OPT.
 
 Variable default: comparison -> int -> condition.
 Variable intsem: comparison -> int -> int -> bool.
-Variable sem: comparison -> val -> val -> val.
+Variable sem: comparison -> val -> val -> option val.
 
-Hypothesis sem_int: forall c x y, sem c (Vint x) (Vint y) = Val.of_bool (intsem c x y).
-Hypothesis sem_undef: forall c v, sem c Vundef v = Vundef.
-Hypothesis sem_eq: forall x y, sem Ceq (Vint x) (Vint y) = Val.of_bool (Int.eq x y).
-Hypothesis sem_ne: forall x y, sem Cne (Vint x) (Vint y) = Val.of_bool (negb (Int.eq x y)).
-Hypothesis sem_default: forall c v n, sem c v (Vint n) = Val.of_optbool (eval_condition (default c n) (v :: nil) m).
+Hypothesis sem_int: forall c x y, sem c (Vint x) (Vint y) = Some (Val.of_bool (intsem c x y)).
+(* Hypothesis sem_undef: forall c v, sem c Vundef v = Some (Vundef). *)
+Hypothesis sem_eq: forall x y, sem Ceq (Vint x) (Vint y) = Some (Val.of_bool (Int.eq x y)).
+Hypothesis sem_ne: forall x y, sem Cne (Vint x) (Vint y) = Some (Val.of_bool (negb (Int.eq x y))).
+Hypothesis sem_default: forall c v n, sem c v (Vint n) = option_map Val.of_bool (eval_condition (default c n) (v :: nil) m).
 
-Lemma eval_compimm:
-  forall le c a n2 x,
+Lemma eval_compimm_opt:
+  forall le c a n2 x y,
   eval_expr ge sp e m le a x ->
+  sem c x (Vint n2) = Some y ->
   exists v, eval_expr ge sp e m le (compimm default intsem c a n2) v
-         /\ Val.lessdef (sem c x (Vint n2)) v.
+         /\ Val.lessdef y v.
 Proof.
-  intros until x.
-  unfold compimm; case (compimm_match c a); intros.
+  intros until y.
+  unfold compimm; case (compimm_match c a); intros ? ? EVAL RES.
 - (* constant *)
-  InvEval. rewrite sem_int. TrivialExists. simpl. destruct (intsem c0 n1 n2); auto.
+  InvEval. rewrite sem_int in RES. inv RES. TrivialExists. simpl. destruct (intsem c0 n1 n2); auto.
 - (* eq cmp *)
-  InvEval. inv H. simpl in H5. inv H5.
-  destruct (Int.eq_dec n2 Int.zero). subst n2. TrivialExists.
-  simpl. rewrite eval_negate_condition.
-  destruct (eval_condition c0 vl m); simpl.
-  unfold Vtrue, Vfalse. destruct b; simpl; rewrite sem_eq; auto.
-  rewrite sem_undef; auto.
+  InvEval. inv EVAL. simpl in H4.
+  destruct (Int.eq_dec n2 Int.zero).
+
+  subst n2. TrivialExists. simpl. rewrite eval_negate_condition.
+  destruct (eval_condition c0 vl m); simpl in *; [|discriminate].
+  destruct b; inv H4; simpl; unfold Vtrue, Vfalse in *; rewrite sem_eq in RES; inv RES; auto.
+
   destruct (Int.eq_dec n2 Int.one). subst n2. TrivialExists.
-  simpl. destruct (eval_condition c0 vl m); simpl.
-  unfold Vtrue, Vfalse. destruct b; simpl; rewrite sem_eq; auto.
-  rewrite sem_undef; auto.
+  simpl. destruct (eval_condition c0 vl m); simpl in *.
+  unfold Val.of_bool, Vtrue, Vfalse in *. destruct b; inv H4; simpl in *; rewrite sem_eq in RES; inv RES; auto.
+  discriminate.
+
   exists (Vint Int.zero); split. EvalOp.
-  destruct (eval_condition c0 vl m); simpl.
-  unfold Vtrue, Vfalse. destruct b; rewrite sem_eq; rewrite Int.eq_false; auto.
-  rewrite sem_undef; auto.
+  unfold Val.of_bool, Vtrue, Vfalse in *.
+  destruct (eval_condition c0 vl m); simpl in *.
+  destruct b; inv H4; rewrite sem_eq in RES; rewrite Int.eq_false in RES; inv RES; auto.
+  discriminate.
+
 - (* ne cmp *)
-  InvEval. inv H. simpl in H5. inv H5.
+  InvEval. inv EVAL. simpl in H4.
   destruct (Int.eq_dec n2 Int.zero). subst n2. TrivialExists.
-  simpl. destruct (eval_condition c0 vl m); simpl.
-  unfold Vtrue, Vfalse. destruct b; simpl; rewrite sem_ne; auto.
-  rewrite sem_undef; auto.
+  simpl. unfold Val.of_bool, Vtrue, Vfalse in *. destruct (eval_condition c0 vl m); simpl.
+  destruct b; simpl; inv H4; rewrite sem_ne in RES; inv RES; auto.
+  discriminate.
+
   destruct (Int.eq_dec n2 Int.one). subst n2. TrivialExists.
-  simpl. rewrite eval_negate_condition. destruct (eval_condition c0 vl m); simpl.
-  unfold Vtrue, Vfalse. destruct b; simpl; rewrite sem_ne; auto.
-  rewrite sem_undef; auto.
+  simpl. unfold Val.of_bool, Vtrue, Vfalse in *. rewrite eval_negate_condition. destruct (eval_condition c0 vl m); simpl.
+  destruct b; simpl; inv H4; rewrite sem_ne in RES; inv RES; auto.
+  discriminate.
+
   exists (Vint Int.one); split. EvalOp.
-  destruct (eval_condition c0 vl m); simpl.
-  unfold Vtrue, Vfalse. destruct b; rewrite sem_ne; rewrite Int.eq_false; auto.
-  rewrite sem_undef; auto.
+  unfold Val.of_bool, Vtrue, Vfalse in *. destruct (eval_condition c0 vl m); simpl in *.
+  destruct b; inv H4; rewrite sem_ne, Int.eq_false in RES; inv RES; auto.
+  discriminate.
+
 - (* eq andimm *)
-  destruct (Int.eq_dec n2 Int.zero). InvEval; subst.
-  econstructor; split. EvalOp. simpl; eauto.
-  destruct v1; simpl; try (rewrite sem_undef; auto). rewrite sem_eq.
-  destruct (Int.eq (Int.and i n1) Int.zero); auto.
-  TrivialExists. simpl. rewrite sem_default. auto.
+  destruct (Int.eq_dec n2 Int.zero).
+  + InvEval; subst. destruct v1; simpl in *;
+                      try (rewrite sem_default in RES; simpl in RES; destruct default; simpl in RES; discriminate).
+
+    rewrite sem_eq in RES; simpl in RES.
+    destruct (Int.eq (Int.and i n1) Int.zero) eqn:RES'; inv RES; (eexists; split; [EvalOp; cbn; rewrite RES'|];eauto).
+  + TrivialExists. simpl in *. rewrite sem_default in RES. auto.
+
 - (* ne andimm *)
   destruct (Int.eq_dec n2 Int.zero). InvEval; subst.
-  econstructor; split. EvalOp. simpl; eauto.
-  destruct v1; simpl; try (rewrite sem_undef; auto). rewrite sem_ne.
-  destruct (Int.eq (Int.and i n1) Int.zero); auto.
-  TrivialExists. simpl. rewrite sem_default. auto.
+  destruct v1; simpl in *;
+    try (rewrite sem_default in RES; simpl in RES; destruct default; simpl in RES; discriminate; fail).
+   econstructor; split. EvalOp. simpl; eauto.
+  rewrite sem_ne in RES; inv RES. auto.
+  TrivialExists. simpl in *. rewrite sem_default in RES. auto.
+
 - (* default *)
-  TrivialExists. simpl. rewrite sem_default. auto.
+  TrivialExists. simpl. rewrite sem_default in RES. auto.
 Qed.
 
 Hypothesis sem_swap:
   forall c x y, sem (swap_comparison c) x y = sem c y x.
 
-Lemma eval_compimm_swap:
-  forall le c a n2 x,
-  eval_expr ge sp e m le a x ->
+Lemma eval_compimm_swap_opt:
+  forall le c a n2 x y,
+    eval_expr ge sp e m le a x ->
+    sem c (Vint n2) x = Some y ->
   exists v, eval_expr ge sp e m le (compimm default intsem (swap_comparison c) a n2) v
-         /\ Val.lessdef (sem c (Vint n2) x) v.
+         /\ Val.lessdef y v.
 Proof.
-  intros. rewrite <- sem_swap. eapply eval_compimm; eauto.
+  intros. rewrite <- sem_swap in H0. eapply eval_compimm_opt; eauto.
 Qed.
 
-End COMP_IMM.
+End COMP_IMM_OPT.
 
-Theorem eval_comp:
-  forall c, binary_constructor_sound (comp c) (Val.cmp c).
+Definition binary_constructor_sound_opt (cstr: expr -> expr -> expr) (sem: val -> val -> option val) :=
+  forall le a x b y z,
+    eval_expr ge sp e m le a x ->
+    eval_expr ge sp e m le b y ->
+    sem x y = Some z ->
+    exists v, eval_expr ge sp e m le (cstr a b) v /\ Val.lessdef z v.
+
+Theorem eval_comp_opt:
+  forall c, binary_constructor_sound_opt (comp c) (fun v1 v2 => option_map Val.of_bool (Val.cmp_bool c v1 v2)).
 Proof.
-  intros; red; intros until y. unfold comp; case (comp_match a b); intros; InvEval.
-  eapply eval_compimm_swap; eauto.
-  intros. unfold Val.cmp. rewrite Val.swap_cmp_bool; auto.
-  eapply eval_compimm; eauto.
+  intros; red; intros until z. unfold comp; case (comp_match a b); intros; InvEval.
+  eapply eval_compimm_swap_opt with (sem:= (fun c v1 v2 => option_map Val.of_bool (Val.cmp_bool c v1 v2))); eauto.
+  intros. rewrite Val.swap_cmp_bool; auto.
+  eapply eval_compimm_opt with (sem:=fun c v1 v2 => option_map Val.of_bool (Val.cmp_bool c v1 v2)); eauto.
   TrivialExists.
 Qed.
 
-Theorem eval_compu:
-  forall c, binary_constructor_sound (compu c) (Val.cmpu (Mem.valid_pointer m) c).
+Theorem eval_compu_opt:
+  forall c, binary_constructor_sound_opt (compu c) (fun v1 v2 => option_map Val.of_bool (Val.cmpu_bool (Mem.valid_pointer m) c v1 v2)).
 Proof.
-  intros; red; intros until y. unfold compu; case (compu_match a b); intros; InvEval.
-  eapply eval_compimm_swap; eauto.
-  intros. unfold Val.cmpu. rewrite Val.swap_cmpu_bool; auto.
-  eapply eval_compimm; eauto.
+  intros; red; intros until z. unfold compu; case (compu_match a b); intros; InvEval.
+  eapply eval_compimm_swap_opt
+    with (sem:= fun c v1 v2 => option_map Val.of_bool (Val.cmpu_bool (Mem.valid_pointer m) c v1 v2)); eauto.
+  intros. rewrite Val.swap_cmpu_bool; auto.
+  eapply eval_compimm_opt with (sem :=fun c v1 v2 => option_map Val.of_bool (Val.cmpu_bool (Mem.valid_pointer m) c v1 v2)); eauto.
   TrivialExists.
 Qed.
 
-Theorem eval_compf:
-  forall c, binary_constructor_sound (compf c) (Val.cmpf c).
+Theorem eval_compf_opt:
+  forall c, binary_constructor_sound_opt (compf c) (fun v1 v2 => option_map Val.of_bool (Val.cmpf_bool c v1 v2)).
 Proof.
   intros; red; intros. unfold compf. TrivialExists.
 Qed.
 
-Theorem eval_compfs:
-  forall c, binary_constructor_sound (compfs c) (Val.cmpfs c).
+Theorem eval_compfs_opt:
+  forall c, binary_constructor_sound_opt (compfs c) (fun v1 v2 => option_map Val.of_bool (Val.cmpfs_bool c v1 v2)).
 Proof.
   intros; red; intros. unfold compfs. TrivialExists.
 Qed.
