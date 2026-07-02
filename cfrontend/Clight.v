@@ -227,13 +227,14 @@ Inductive deref_loc (ty: type) (m: mem) (b: block) (ofs: ptrofs) :
   This is allowed only if [ty] indicates an access by value or by copy.
   [m'] is the updated memory state. *)
 
+(* cascompcert only supports assign_loc_value, so we disable the other two. *)
 Inductive assign_loc (ce: composite_env) (ty: type) (m: mem) (b: block) (ofs: ptrofs):
                                             bitfield -> val -> mem -> Prop :=
   | assign_loc_value: forall v chunk m',
       access_mode ty = By_value chunk ->
       Mem.storev chunk m (Vptr b ofs) v = Some m' ->
       assign_loc ce ty m b ofs Full v m'
-  | assign_loc_copy: forall b' ofs' bytes m',
+  (* | assign_loc_copy: forall b' ofs' bytes m',
       access_mode ty = By_copy ->
       (sizeof ce ty > 0 -> (alignof_blockcopy ce ty | Ptrofs.unsigned ofs')) ->
       (sizeof ce ty > 0 -> (alignof_blockcopy ce ty | Ptrofs.unsigned ofs)) ->
@@ -245,7 +246,8 @@ Inductive assign_loc (ce: composite_env) (ty: type) (m: mem) (b: block) (ofs: pt
       assign_loc ce ty m b ofs Full (Vptr b' ofs') m'
   | assign_loc_bitfield: forall sz sg pos width v m' v',
       store_bitfield ty sz sg pos width m (Vptr b ofs) v m' v' ->
-      assign_loc ce ty m b ofs (Bits sz sg pos width) v m'.
+      assign_loc ce ty m b ofs (Bits sz sg pos width) v m' *)
+  .
 
 Section SEMANTICS.
 
