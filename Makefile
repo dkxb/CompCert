@@ -28,6 +28,16 @@ else
 ARCHDIRS=$(ARCH)_$(BITSIZE) $(ARCH)
 endif
 
+CONCUR_DIRS := \
+  concurrency concurrency/framework concurrency/framework/NPDefs concurrency/framework/NPDefs/DRFLemmas \
+  concurrency/framework/GlobUSim concurrency/framework/GlobDSim \
+  concurrency/framework/Compositionality concurrency/comp_correct/cfrontend \
+  concurrency/common concurrency/comp_correct \
+  concurrency/comp_correct/localize \
+  concurrency/comp_correct/backend \
+  concurrency/comp_correct/x86 \
+  concurrency/x86TSO concurrency/x86TSO/lock_proof
+
 DIRS := lib common $(ARCHDIRS) backend cfrontend driver cparser
 
 ifeq ($(CLIGHTGEN),true)
@@ -35,6 +45,7 @@ DIRS += export
 endif
 
 COQINCLUDES := $(foreach d, $(DIRS), -R $(d) compcert.$(d))
+COQINCLUDES += -R concurrency compcert.concurrency
 
 ifeq ($(LIBRARY_FLOCQ),local)
 DIRS += flocq/Core flocq/Prop flocq/Calc flocq/IEEE754
@@ -76,6 +87,14 @@ MenhirLib/Interpreter.vo: COQCOPTS += -w -undeclared-scope
 flocq/%.vo: COQCOPTS+=-w -deprecated-syntactic-definition
 MenhirLib/%.vo: COQCOPTS+=-w -deprecated-syntactic-definition
 
+# Concurrency files were written for Coq 8.6; suppress accumulated deprecation warnings.
+concurrency/%.vo: COQCOPTS+= \
+  -w -deprecated-hint-without-locality \
+  -w -deprecated-instance-without-locality \
+  -w -deprecated-syntactic-definition \
+  -w -omega-is-deprecated \
+  -w -omega-flag-deprecated
+
 # For the extraction phase, we silence other warnings:
 # change-dir-deprecated:
 #    warning introduced in 8.20, no alternative before 8.20
@@ -115,8 +134,8 @@ COQCHK="$(COQBIN)coqchk" $(COQINCLUDES)
 MENHIR=menhir
 CP=cp
 
-VPATH=$(DIRS)
-GPATH=$(DIRS)
+VPATH=$(DIRS) $(CONCUR_DIRS)
+GPATH=$(DIRS) $(CONCUR_DIRS)
 
 # Flocq
 
@@ -148,33 +167,20 @@ COMMON=Errors.v AST.v Linking.v \
 
 # Back-end modules (in backend/, $(ARCH)/)
 
-BACKEND=\
-  Cminor.v Cminortyping.v Op.v CminorSel.v \
-  SelectOp.v SelectDiv.v SplitLong.v SelectLong.v Selection.v \
-  SelectOpproof.v SelectDivproof.v SplitLongproof.v \
-  SelectLongproof.v Selectionproof.v \
-  Registers.v RTL.v \
-  RTLgen.v RTLgenspec.v RTLgenproof.v \
-  Tailcall.v Tailcallproof.v \
-  Inlining.v Inliningspec.v Inliningproof.v \
-  Renumber.v Renumberproof.v \
-  RTLtyping.v \
-  Kildall.v Liveness.v \
-  ValueDomain.v ValueAOp.v ValueAnalysis.v \
-  ConstpropOp.v Constprop.v ConstpropOpproof.v Constpropproof.v \
-  CSEdomain.v CombineOp.v CSE.v CombineOpproof.v CSEproof.v \
-  NeedDomain.v NeedOp.v Deadcode.v Deadcodeproof.v \
-  Unusedglob.v Unusedglobproof.v \
-  Machregs.v Locations.v Conventions1.v Conventions.v LTL.v \
-  Allocation.v Allocproof.v \
-  Tunneling.v Tunnelingproof.v \
-  Linear.v Lineartyping.v \
-  Linearize.v Linearizeproof.v \
-  CleanupLabels.v CleanupLabelsproof.v \
-  Debugvar.v Debugvarproof.v \
-  Mach.v \
-  Bounds.v Stacklayout.v Stacking.v Stackingproof.v \
-  Asm.v Asmgen.v Asmgenproof0.v Asmgenproof1.v Asmgenproof.v
+# backend/ files
+BACKEND= \
+  Allocation.v Asmgenproof0.v Bounds.v CleanupLabels.v \
+  Cminor.v CminorSel.v Conventions.v Kildall.v LTL.v \
+  Linear.v Linearize.v Lineartyping.v Locations.v \
+  Mach.v RTL.v RTLgen.v RTLgenspec.v RTLtyping.v \
+  Registers.v Renumber.v SelectDiv.v SelectDivproof.v \
+  Selection.v SplitLong.v SplitLongproof.v Stacking.v \
+  Tailcall.v Tunneling.v
+
+# x86 files
+BACKEND+= \
+  Asm.v Asmgen.v Asmgenproof1.v Conventions1.v Machregs.v Op.v \
+  SelectLong.v SelectLongproof.v SelectOp.v SelectOpproof.v Stacklayout.v
 
 # C front-end modules (in cfrontend/)
 
@@ -211,6 +217,9 @@ else
 EXPORTLIB=
 endif
 
+# Concurrency extension files
+CONCUR=$(shell find concurrency -name "*.v" | sort | tr '\n' ' ')
+
 # All source files
 
 FILES=$(VLIB) $(COMMON) $(BACKEND) $(CFRONTEND) $(DRIVER) $(FLOCQ) \
@@ -222,6 +231,16 @@ GENERATED=\
   $(ARCH)/ConstpropOp.v $(ARCH)/SelectOp.v $(ARCH)/SelectLong.v \
   backend/SelectDiv.v backend/SplitLong.v \
   cparser/Parser.v
+
+# Build targets for file categories
+
+.PHONY: common backend cfrontend
+
+common: $(COMMON:.v=.vo)
+
+backend: $(BACKEND:.v=.vo)
+
+cfrontend: $(CFRONTEND:.v=.vo)
 
 all:
 	@test -f .depend || $(MAKE) depend

@@ -436,6 +436,23 @@ Definition compare_ints (x y: val) (rs: regset) (m: mem): regset :=
      #OF  <- (Val.sub_overflow x y)
      #PF  <- Vundef.
 
+Definition check_compare_ints (x y: val) (m: mem) : bool :=
+(*  let weak_valid_ptr := fun b ofs => (Mem.valid_pointer m b ofs) || (Mem.valid_pointer m b (ofs - 1)) in
+  match x, y with
+  | Vint n1, Vint n2 => true
+  | Vint n1, Vptr b2 ofs2 => Int.eq n1 Int.zero && weak_valid_ptr b2 (Ptrofs.unsigned ofs2)
+  | Vptr b1 ofs1, Vint n2 => Int.eq n2 Int.zero && weak_valid_ptr b1 (Ptrofs.unsigned ofs1)
+  | Vptr b1 ofs1, Vptr b2 ofs2 =>
+    if eq_block b1 b2
+    then weak_valid_ptr b1 (Ptrofs.unsigned ofs1) && weak_valid_ptr b2 (Ptrofs.unsigned ofs2)
+    else Mem.valid_pointer m b1 (Ptrofs.unsigned ofs1) && Mem.valid_pointer m b2 (Ptrofs.unsigned ofs2)
+  | _, _ => false
+  end.*)
+  if (Val.cmpu_bool (Mem.valid_pointer m) Ceq x y)
+  then true
+  else false.
+
+
 Definition compare_longs (x y: val) (rs: regset) (m: mem): regset :=
   rs #ZF  <- (Val.maketotal (Val.cmplu (Mem.valid_pointer m) Ceq x y))
      #CF  <- (Val.maketotal (Val.cmplu (Mem.valid_pointer m) Clt x y))
@@ -837,11 +854,15 @@ Definition exec_instr (f: function) (i: instruction) (rs: regset) (m: mem) : out
   | Prorq_ri rd n =>
       Next (nextinstr_nf (rs#rd <- (Val.rorl rs#rd (Vint n)))) m
   | Pcmpl_rr r1 r2 =>
-      Next (nextinstr (compare_ints (rs r1) (rs r2) rs m)) m
+      if check_compare_ints (rs r1) (rs r2) m
+      then Next (nextinstr (compare_ints (rs r1) (rs r2) rs m)) m
+      else Stuck
   | Pcmpq_rr r1 r2 =>
       Next (nextinstr (compare_longs (rs r1) (rs r2) rs m)) m
   | Pcmpl_ri r1 n =>
-      Next (nextinstr (compare_ints (rs r1) (Vint n) rs m)) m
+      if check_compare_ints (rs r1) (Vint n) m 
+      then Next (nextinstr (compare_ints (rs r1) (Vint n) rs m)) m
+      else Stuck
   | Pcmpq_ri r1 n =>
       Next (nextinstr (compare_longs (rs r1) (Vlong n) rs m)) m
   | Ptestl_rr r1 r2 =>

@@ -336,12 +336,12 @@ Definition eval_binop
   | Oshll => Some (Val.shll arg1 arg2)
   | Oshrl => Some (Val.shrl arg1 arg2)
   | Oshrlu => Some (Val.shrlu arg1 arg2)
-  | Ocmp c => Some (Val.cmp c arg1 arg2)
-  | Ocmpu c => Some (Val.cmpu (Mem.valid_pointer m) c arg1 arg2)
-  | Ocmpf c => Some (Val.cmpf c arg1 arg2)
-  | Ocmpfs c => Some (Val.cmpfs c arg1 arg2)
+  | Ocmp c => option_map Val.of_bool (Val.cmp_bool c arg1 arg2)
+  | Ocmpu c => option_map Val.of_bool (Val.cmpu_bool (Mem.valid_pointer m) c arg1 arg2)
+  | Ocmpf c => option_map Val.of_bool (Val.cmpf_bool c arg1 arg2)
+  | Ocmpfs c => option_map Val.of_bool (Val.cmpfs_bool c arg1 arg2)
   | Ocmpl c => Val.cmpl c arg1 arg2
-  | Ocmplu c => Val.cmplu (Mem.valid_pointer m) c arg1 arg2
+  | Ocmplu c => option_map Val.of_bool (Val.cmplu_bool (Mem.valid_pointer m) c arg1 arg2)
   end.
 
 (** Evaluation of an expression: [eval_expr ge sp e m a v]

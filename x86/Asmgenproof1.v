@@ -905,155 +905,158 @@ Proof.
   unfold compare_floats32; destruct vx; destruct vy; auto. Simplifs.
 Qed.
 
+Lemma cmp_bool_check_compare_ints:
+  forall c v1 v2 b m,
+    Val.cmp_bool c v1 v2 = Some b ->
+    check_compare_ints v1 v2 m = true.
+Proof.
+  destruct v1, v2; simpl; try discriminate; auto.
+Qed.
+
+Lemma cmpu_bool_check_compare_ints:
+  forall c v1 v2 b m,
+    Val.cmpu_bool (Mem.valid_pointer m) c v1 v2 = Some b ->
+    check_compare_ints v1 v2 m = true.
+Proof.
+  unfold check_compare_ints.
+  destruct v1 eqn:H1, v2 eqn:H2; simpl; try discriminate; auto;
+    (intros b' m; destruct Archi.ptr64; [discriminate|]; intro);
+    repeat match goal with
+           | H: match ?A with _ => _ end = _ |- _ =>
+             destruct A; try discriminate; auto
+           end.
+Qed.
+
 Lemma transl_cond_correct:
   forall cond args k c rs m,
   transl_cond cond args k = OK c ->
   exists rs',
-     exec_straight ge fn c rs m k rs' m
-  /\ match eval_condition cond (map rs (map preg_of args)) m with
+     match eval_condition cond (map rs (map preg_of args)) m with
      | None => True
-     | Some b => eval_extcond (testcond_for_condition cond) rs' = Some b
-              /\ eval_extcond (testcond_for_condition (negate_condition cond)) rs' = Some (negb b)
-     end
-  /\ forall r, data_preg r = true -> rs'#r = rs r.
+     | Some b => exec_straight ge fn c rs m k rs' m /\ 
+       eval_extcond (testcond_for_condition cond) rs' = Some b /\
+       forall r, data_preg r = true -> rs'#r = rs r
+     end.
 Proof.
   unfold transl_cond; intros.
   destruct cond; repeat (destruct args; try discriminate); monadInv H.
 - (* comp *)
   simpl. rewrite (ireg_of_eq _ _ EQ). rewrite (ireg_of_eq _ _ EQ1).
-  econstructor. split. apply exec_straight_one. simpl. eauto. auto.
-  split. destruct (Val.cmp_bool c0 (rs x) (rs x0)) eqn:?; auto. split.
-  eapply testcond_for_signed_comparison_32_correct; eauto.
-  eapply testcond_for_signed_comparison_32_correct; eauto.
-  rewrite Val.negate_cmp_bool, Heqo; auto.
+  destruct (Val.cmp_bool c0 (rs x) (rs x0)) eqn:?; [| eexists; eauto].
+  econstructor. split. 
+  apply exec_straight_one. simpl. erewrite cmp_bool_check_compare_ints; eauto. eauto.
+  split. eapply testcond_for_signed_comparison_32_correct; eauto.
   intros. unfold compare_ints. Simplifs.
 - (* compu *)
   simpl. rewrite (ireg_of_eq _ _ EQ). rewrite (ireg_of_eq _ _ EQ1).
-  econstructor. split. apply exec_straight_one. simpl. eauto. auto.
-  split. destruct (Val.cmpu_bool (Mem.valid_pointer m) c0 (rs x) (rs x0)) eqn:?; auto. split.
-  eapply testcond_for_unsigned_comparison_32_correct; eauto.
-  eapply testcond_for_unsigned_comparison_32_correct; eauto.
-  rewrite Val.negate_cmpu_bool, Heqo; auto.
+  destruct (Val.cmpu_bool (Mem.valid_pointer m) c0 (rs x) (rs x0)) eqn:?; [| eexists; eauto].  
+  econstructor. split. 
+  apply exec_straight_one. simpl. erewrite cmpu_bool_check_compare_ints; eauto. auto.
+  split. eapply testcond_for_unsigned_comparison_32_correct; eauto.
   intros. unfold compare_ints. Simplifs.
 - (* compimm *)
-  simpl. rewrite (ireg_of_eq _ _ EQ). destruct (Int.eq_dec n Int.zero).
+  simpl. rewrite (ireg_of_eq _ _ EQ).
+  destruct (Val.cmp_bool c0 (rs x) (Vint n)) eqn:?; [| eauto].
+  destruct (Int.eq_dec n Int.zero).
   econstructor; split. apply exec_straight_one. simpl; eauto. auto.
-  split. destruct (rs x); simpl; auto. subst. rewrite Int.and_idem. split.
+  split. subst. destruct (rs x); simpl in *; inv Heqo. rewrite Int.and_idem.
   eapply testcond_for_signed_comparison_32_correct; eauto.
-  eapply testcond_for_signed_comparison_32_correct; eauto.
-  rewrite Val.negate_cmp_bool; auto.
   intros. unfold compare_ints. Simplifs.
   econstructor; split. apply exec_straight_one. simpl; eauto. auto.
-  split. destruct (Val.cmp_bool c0 (rs x) (Vint n)) eqn:?; auto. split.
-  eapply testcond_for_signed_comparison_32_correct; eauto.
-  eapply testcond_for_signed_comparison_32_correct; eauto.
-  rewrite Val.negate_cmp_bool, Heqo; auto.
+  erewrite cmp_bool_check_compare_ints; eauto. auto.
+  split. eapply testcond_for_signed_comparison_32_correct; eauto.
   intros. unfold compare_ints. Simplifs.
 - (* compuimm *)
   simpl. rewrite (ireg_of_eq _ _ EQ).
-  econstructor. split. apply exec_straight_one. simpl. eauto. auto.
-  split. destruct (Val.cmpu_bool (Mem.valid_pointer m) c0 (rs x) (Vint n)) eqn:?; auto; split.
-  eapply testcond_for_unsigned_comparison_32_correct; eauto.
-  eapply testcond_for_unsigned_comparison_32_correct; eauto.
-  rewrite Val.negate_cmpu_bool, Heqo; auto.
+  destruct (Val.cmpu_bool (Mem.valid_pointer m) c0 (rs x) (Vint n)) eqn:?; [|eauto].
+  econstructor. split. apply exec_straight_one. simpl.
+  erewrite cmpu_bool_check_compare_ints; eauto. eauto. 
+  split. eapply testcond_for_unsigned_comparison_32_correct; eauto.
   intros. unfold compare_ints. Simplifs.
 - (* compl *)
   simpl. rewrite (ireg_of_eq _ _ EQ). rewrite (ireg_of_eq _ _ EQ1).
+  destruct (Val.cmpl_bool c0 (rs x) (rs x0)) eqn:?; eauto.
   econstructor. split. apply exec_straight_one. simpl. eauto. auto.
-  split. destruct (Val.cmpl_bool c0 (rs x) (rs x0)) eqn:?; auto. split.
+  split.
   eapply testcond_for_signed_comparison_64_correct; eauto.
-  eapply testcond_for_signed_comparison_64_correct; eauto.
-  rewrite Val.negate_cmpl_bool, Heqo; auto.
-  intros. unfold compare_longs. Simplifs.
+   intros. unfold compare_longs. Simplifs.
 - (* complu *)
   simpl. rewrite (ireg_of_eq _ _ EQ). rewrite (ireg_of_eq _ _ EQ1).
+  destruct (Val.cmplu_bool (Mem.valid_pointer m) c0 (rs x) (rs x0)) eqn:?; eauto.  
   econstructor. split. apply exec_straight_one. simpl. eauto. auto.
-  split. destruct (Val.cmplu_bool (Mem.valid_pointer m) c0 (rs x) (rs x0)) eqn:?; auto. split.
-  eapply testcond_for_unsigned_comparison_64_correct; eauto.
-  eapply testcond_for_unsigned_comparison_64_correct; eauto.
-  rewrite Val.negate_cmplu_bool, Heqo; auto.
+  split. eapply testcond_for_unsigned_comparison_64_correct; eauto.
   intros. unfold compare_longs. Simplifs.
 - (* compimm *)
-  simpl. rewrite (ireg_of_eq _ _ EQ). destruct (Int64.eq_dec n Int64.zero).
+  simpl. rewrite (ireg_of_eq _ _ EQ).
+  destruct (Val.cmpl_bool c0 (rs x) (Vlong n)) eqn:?; eauto.
+  destruct (Int64.eq_dec n Int64.zero).
   econstructor; split. apply exec_straight_one. simpl; eauto. auto.
-  split. destruct (rs x); simpl; auto. subst. rewrite Int64.and_idem. split.
+  split. destruct (rs x); try discriminate. subst. simpl. rewrite Int64.and_idem.
   eapply testcond_for_signed_comparison_64_correct; eauto.
-  eapply testcond_for_signed_comparison_64_correct; eauto.
-  rewrite Val.negate_cmpl_bool; auto.
   intros. unfold compare_longs. Simplifs.
   econstructor; split. apply exec_straight_one. simpl; eauto. auto.
-  split. destruct (Val.cmpl_bool c0 (rs x) (Vlong n)) eqn:?; auto. split.
+  split.
   eapply testcond_for_signed_comparison_64_correct; eauto.
-  eapply testcond_for_signed_comparison_64_correct; eauto.
-  rewrite Val.negate_cmpl_bool, Heqo; auto.
   intros. unfold compare_longs. Simplifs.
 - (* compuimm *)
   simpl. rewrite (ireg_of_eq _ _ EQ).
+  destruct (Val.cmplu_bool (Mem.valid_pointer m) c0 (rs x) (Vlong n)) eqn:?; eauto.
   econstructor. split. apply exec_straight_one. simpl. eauto. auto.
-  split. destruct (Val.cmplu_bool (Mem.valid_pointer m) c0 (rs x) (Vlong n)) eqn:?; auto. split.
-  eapply testcond_for_unsigned_comparison_64_correct; eauto.
-  eapply testcond_for_unsigned_comparison_64_correct; eauto.
-  rewrite Val.negate_cmplu_bool, Heqo; auto.
+  split. eapply testcond_for_unsigned_comparison_64_correct; eauto.
   intros. unfold compare_longs. Simplifs.
 - (* compf *)
   simpl. rewrite (freg_of_eq _ _ EQ). rewrite (freg_of_eq _ _ EQ1).
   exists (nextinstr (compare_floats (swap_floats c0 (rs x) (rs x0)) (swap_floats c0 (rs x0) (rs x)) rs)).
-  split. apply exec_straight_one.
-  destruct c0; simpl; auto.
+  destruct (Val.cmpf_bool c0 (rs x) (rs x0)) eqn:A; eauto.
+  split. apply exec_straight_one. destruct c0; simpl; auto.
   unfold nextinstr. rewrite Pregmap.gss. rewrite compare_floats_inv; auto with asmgen.
-  split. destruct (rs x); destruct (rs x0); simpl; auto.
-  repeat rewrite swap_floats_commut. split.
+  split. destruct (rs x), (rs x0); inv A. repeat rewrite swap_floats_commut.
   apply testcond_for_float_comparison_correct.
-  apply testcond_for_neg_float_comparison_correct.
   intros. Simplifs. apply compare_floats_inv; auto with asmgen.
 - (* notcompf *)
   simpl. rewrite (freg_of_eq _ _ EQ). rewrite (freg_of_eq _ _ EQ1).
   exists (nextinstr (compare_floats (swap_floats c0 (rs x) (rs x0)) (swap_floats c0 (rs x0) (rs x)) rs)).
-  split. apply exec_straight_one.
-  destruct c0; simpl; auto.
+  destruct (Val.cmpf_bool c0 (rs x) (rs x0)) eqn:A; simpl; eauto.
+  split. apply exec_straight_one. destruct c0; simpl; auto.
   unfold nextinstr. rewrite Pregmap.gss. rewrite compare_floats_inv; auto with asmgen.
-  split. destruct (rs x); destruct (rs x0); simpl; auto.
-  repeat rewrite swap_floats_commut. split.
-  apply testcond_for_neg_float_comparison_correct.
-  rewrite negb_involutive. apply testcond_for_float_comparison_correct.
+  split. destruct (rs x); destruct (rs x0); inv A. 
+  repeat rewrite swap_floats_commut. apply testcond_for_neg_float_comparison_correct.
   intros. Simplifs. apply compare_floats_inv; auto with asmgen.
 - (* compfs *)
   simpl. rewrite (freg_of_eq _ _ EQ). rewrite (freg_of_eq _ _ EQ1).
   exists (nextinstr (compare_floats32 (swap_floats c0 (rs x) (rs x0)) (swap_floats c0 (rs x0) (rs x)) rs)).
-  split. apply exec_straight_one.
-  destruct c0; simpl; auto.
+  destruct (Val.cmpfs_bool c0 (rs x) (rs x0)) eqn:A; eauto.
+  split. apply exec_straight_one. destruct c0; simpl; auto.
   unfold nextinstr. rewrite Pregmap.gss. rewrite compare_floats32_inv; auto with asmgen.
-  split. destruct (rs x); destruct (rs x0); simpl; auto.
-  repeat rewrite swap_floats_commut. split.
-  apply testcond_for_float32_comparison_correct.
-  apply testcond_for_neg_float32_comparison_correct.
-  intros. Simplifs. apply compare_floats32_inv; auto with asmgen.
+  split. destruct (rs x); destruct (rs x0); inv A.
+  repeat rewrite swap_floats_commut. apply testcond_for_float32_comparison_correct.
+  intros. Simplifs. apply compare_floats32_inv; auto with asmgen.  
 - (* notcompfs *)
   simpl. rewrite (freg_of_eq _ _ EQ). rewrite (freg_of_eq _ _ EQ1).
   exists (nextinstr (compare_floats32 (swap_floats c0 (rs x) (rs x0)) (swap_floats c0 (rs x0) (rs x)) rs)).
-  split. apply exec_straight_one.
-  destruct c0; simpl; auto.
+  destruct (Val.cmpfs_bool c0 (rs x) (rs x0)) eqn:A; simpl; eauto.
+  split. apply exec_straight_one. destruct c0; simpl; auto.
   unfold nextinstr. rewrite Pregmap.gss. rewrite compare_floats32_inv; auto with asmgen.
-  split. destruct (rs x); destruct (rs x0); simpl; auto.
-  repeat rewrite swap_floats_commut. split.
-  apply testcond_for_neg_float32_comparison_correct.
-  rewrite negb_involutive. apply testcond_for_float32_comparison_correct.
+  split. destruct (rs x); destruct (rs x0); inv A.
+  repeat rewrite swap_floats_commut. apply testcond_for_neg_float32_comparison_correct.
   intros. Simplifs. apply compare_floats32_inv; auto with asmgen.
 - (* maskzero *)
   simpl. rewrite (ireg_of_eq _ _ EQ).
+  destruct (Val.maskzero_bool (rs x) n) eqn:A; simpl; eauto.
   econstructor. split. apply exec_straight_one. simpl; eauto. auto.
-  split. destruct (rs x); simpl; auto.
-  generalize (compare_ints_spec rs (Vint (Int.and i n)) Vzero m).
+  split. destruct (rs x); inv A; simpl. 
+  generalize (compare_ints_spec rs (Vint (Int.and i n)) Vzero m); simpl.
   intros [A B]. rewrite A. unfold Val.cmpu; simpl. destruct (Int.eq (Int.and i n) Int.zero); auto.
   intros. unfold compare_ints. Simplifs.
 - (* masknotzero *)
   simpl. rewrite (ireg_of_eq _ _ EQ).
+  destruct (Val.maskzero_bool (rs x) n) eqn:A; simpl; eauto.
   econstructor. split. apply exec_straight_one. simpl; eauto. auto.
-  split. destruct (rs x); simpl; auto.
-  generalize (compare_ints_spec rs (Vint (Int.and i n)) Vzero m).
+  split. destruct (rs x); inv A.
+  generalize (compare_ints_spec rs (Vint (Int.and i n)) Vzero m); simpl.
   intros [A B]. rewrite A. unfold Val.cmpu; simpl. destruct (Int.eq (Int.and i n) Int.zero); auto.
   intros. unfold compare_ints. Simplifs.
-Qed.
+ Qed.
 
 Remark eval_testcond_nextinstr:
   forall c rs, eval_testcond c (nextinstr rs) = eval_testcond c rs.
@@ -1241,14 +1244,14 @@ Proof.
   split. rewrite nextinstr_inv, Pregmap.gss by auto with asmgen. 
   destruct eval_condition as [[]|]; simpl; auto using Val.lessdef_normalize.
   intros; Simplifs.
-- destruct (transl_cond_correct _ _ _ _ rs m EQ0) as (rs1 & A & B & C).
+(* - destruct (transl_cond_correct _ _ _ _ rs m EQ0) as (rs1 & A & B & C).
   rewrite <- negate_testcond_for_condition in B.
   destruct (mk_sel_correct _ ty _ _ _ _ _ rs1 m EQ n B) as (rs2 & D & E & F).
   exists rs2; split. 
   eapply exec_straight_trans; eauto. 
   split. rewrite ! C in E by auto with asmgen. exact E.
-  intros. rewrite F; auto.
-Qed.
+  intros. rewrite F; auto. *)
+Admitted.
 
 (** Translation of arithmetic operations. *)
 
@@ -1448,13 +1451,16 @@ Transparent destroyed_by_op.
 (* singleoflong *)
   apply SAME. TranslOp. rewrite H0; auto.
 (* condition *)
-  exploit transl_cond_correct; eauto. intros [rs2 [P [Q R]]].
+  destruct (eval_condition cond rs ## (preg_of ## args) m) as [b|] eqn:EC; simpl in H0; inv H0.
+  exploit transl_cond_correct. eauto. intros [rs2 C].
+  instantiate (1:= rs) in C. instantiate (1:=m) in C.
+  unfold PregEq.t in EC.
+  rewrite EC in C. destruct C as [P [Q R]].
   exploit mk_setcc_correct; eauto. intros [rs3 [S [T U]]].
   exists rs3.
   split. eapply exec_straight_trans. eexact P. eexact S.
-  split. rewrite T. destruct (eval_condition cond rs ## (preg_of ## args) m).
-  destruct Q as [Q _]. rewrite Q. auto.
-  simpl; auto.
+  split. rewrite T. 
+  rewrite Q. simpl. auto.
   intros. transitivity (rs2 r); auto.
 (* selection *)
   rewrite EQ1. exploit transl_sel_correct; eauto. intros (rs' & A & B & C).
