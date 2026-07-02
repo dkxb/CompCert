@@ -735,6 +735,7 @@ Definition safe_binop (op: binary_operation) : bool :=
   match op with
   | Odiv | Odivu | Omod | Omodu => false
   | Odivl | Odivlu | Omodl | Omodlu => false
+  | Ocmp _ | Ocmpu _ | Ocmpf _ | Ocmpfs _ => false
   | Ocmpl _ | Ocmplu _ => false
   | _ => true
   end.
