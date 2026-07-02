@@ -1387,22 +1387,28 @@ Proof.
 - TrivialExists; inv H0; inv H1; simpl; auto.
   destruct (Int.ltu i0 Int64.iwordsize'); constructor.
 - (* cmp *)
-  TrivialExists. inv H0; inv H1; auto. apply val_inject_val_of_optbool.
+  inv H0; inv H1; simpl in *; try discriminate.
+  match goal with H: Some _ = Some _ |- _ => inv H end.
+  eexists; split; eauto. apply val_inject_val_of_bool.
 - (* cmpu *)
-  TrivialExists. unfold Val.cmpu.
-  destruct (Val.cmpu_bool (Mem.valid_pointer m) c v1 v2) as [b|] eqn:E.
+  simpl in *.
+  destruct (Val.cmpu_bool (Mem.valid_pointer m) c v1 v2) as [b|] eqn:E; simpl in *; try discriminate.
+  match goal with H: Some _ = Some _ |- _ => inv H end.
   replace (Val.cmpu_bool (Mem.valid_pointer tm) c tv1 tv2) with (Some b).
-  apply val_inject_val_of_optbool.
+  econstructor; split. simpl; eauto. apply val_inject_val_of_bool.
   symmetry. eapply Val.cmpu_bool_inject; eauto.
   intros; eapply Mem.valid_pointer_inject_val; eauto.
   intros; eapply Mem.weak_valid_pointer_inject_val; eauto.
   intros; eapply Mem.weak_valid_pointer_inject_no_overflow; eauto.
   intros; eapply Mem.different_pointers_inject; eauto.
-  simpl; auto.
 - (* cmpf *)
-  TrivialExists. inv H0; inv H1; auto. apply val_inject_val_of_optbool.
+  inv H0; inv H1; simpl in *; try discriminate.
+  match goal with H: Some _ = Some _ |- _ => inv H end.
+  eexists; split; eauto. apply val_inject_val_of_bool.
 - (* cmpfs *)
-  TrivialExists. inv H0; inv H1; auto. apply val_inject_val_of_optbool.
+  inv H0; inv H1; simpl in *; try discriminate.
+  match goal with H: Some _ = Some _ |- _ => inv H end.
+  eexists; split; eauto. apply val_inject_val_of_bool.
 - (* cmpl *)
   unfold Val.cmpl in *. inv H0; inv H1; simpl in H4; inv H4.
   econstructor; split. simpl; eauto. apply val_inject_val_of_bool.

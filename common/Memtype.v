@@ -855,7 +855,7 @@ Axiom store_outside_extends:
   forall chunk m1 m2 b ofs v m2',
   extends m1 m2 ->
   store chunk m2 b ofs v = Some m2' ->
-  (forall ofs', perm m1 b ofs' Cur Readable -> ofs <= ofs' < ofs + size_chunk chunk -> False) ->
+  (forall ofs', perm m1 b ofs' Max Readable -> ofs <= ofs' < ofs + size_chunk chunk -> False) ->
   extends m1 m2'.
 
 Axiom storev_extends:
@@ -881,7 +881,7 @@ Axiom storebytes_outside_extends:
   forall m1 m2 b ofs bytes2 m2',
   extends m1 m2 ->
   storebytes m2 b ofs bytes2 = Some m2' ->
-  (forall ofs', perm m1 b ofs' Cur Readable -> ofs <= ofs' < ofs + Z.of_nat (length bytes2) -> False) ->
+  (forall ofs', perm m1 b ofs' Max Readable -> ofs <= ofs' < ofs + Z.of_nat (length bytes2) -> False) ->
   extends m1 m2'.
 
 Axiom alloc_extends:
@@ -1090,7 +1090,7 @@ Axiom store_outside_inject:
   inject f m1 m2 ->
   (forall b' delta ofs',
     f b' = Some(b, delta) ->
-    perm m1 b' ofs' Cur Readable ->
+    perm m1 b' ofs' Max Readable ->
     ofs <= ofs' + delta < ofs + size_chunk chunk -> False) ->
   store chunk m2 b ofs v = Some m2' ->
   inject f m1 m2'.
@@ -1126,7 +1126,7 @@ Axiom storebytes_outside_inject:
   inject f m1 m2 ->
   (forall b' delta ofs',
     f b' = Some(b, delta) ->
-    perm m1 b' ofs' Cur Readable ->
+    perm m1 b' ofs' Max Readable ->
     ofs <= ofs' + delta < ofs + Z.of_nat (length bytes2) -> False) ->
   storebytes m2 b ofs bytes2 = Some m2' ->
   inject f m1 m2'.

@@ -286,13 +286,17 @@ Proof.
     rewrite Int.eq_true. auto. }
   destruct a; simpl; auto. destruct b; auto.
 - inv H. econstructor; eauto. rewrite H6. decEq. decEq.
-  simpl in H6. inv H6. eauto.
+  simpl in H6. destruct (Val.cmp_bool c v1 v2) as [b|]; simpl in H6; try discriminate.
+  inv H6. apply (CMP (Some b)); simpl; auto.
 - inv H. econstructor; eauto. rewrite H6. decEq. decEq.
-  simpl in H6. inv H6. eauto.
+  simpl in H6. destruct (Val.cmpu_bool (Mem.valid_pointer m) c v1 v2) as [b|]; simpl in H6; try discriminate.
+  inv H6. apply (CMP (Some b)); simpl; auto.
 - inv H. econstructor; eauto. rewrite H6. decEq. decEq.
-  simpl in H6. inv H6. eauto.
+  simpl in H6. destruct (Val.cmpf_bool c v1 v2) as [b|]; simpl in H6; try discriminate.
+  inv H6. apply (CMP (Some b)); simpl; auto.
 - inv H. econstructor; eauto. rewrite H6. decEq. decEq.
-  simpl in H6. inv H6. eauto.
+  simpl in H6. destruct (Val.cmpfs_bool c v1 v2) as [b|]; simpl in H6; try discriminate.
+  inv H6. apply (CMP (Some b)); simpl; auto.
 - inv H. econstructor; eauto. rewrite H6. decEq. decEq.
   simpl in H6. unfold Val.cmpl in H6.
   destruct (Val.cmpl_bool c v1 v2) as [[]|]; inv H6; reflexivity.
@@ -318,10 +322,10 @@ Proof.
   assert (OF_BOOL: forall ob, option_map Val.of_bool ob <> Some (Vptr b i)).
   { intros. destruct ob as [[]|]; discriminate. }
   destruct a; simpl; auto. destruct b0; auto.
-- inv H; eelim OF_OPTBOOL; eauto.
-- inv H; eelim OF_OPTBOOL; eauto.
-- inv H; eelim OF_OPTBOOL; eauto.
-- inv H; eelim OF_OPTBOOL; eauto.
+- inv H; simpl in *; eelim OF_BOOL; eauto.
+- inv H; simpl in *; eelim OF_BOOL; eauto.
+- inv H; simpl in *; eelim OF_BOOL; eauto.
+- inv H; simpl in *; eelim OF_BOOL; eauto.
 - inv H; eelim OF_BOOL; eauto.
 - inv H; eelim OF_BOOL; eauto.
 Qed.
@@ -830,8 +834,7 @@ Proof.
   unfold cmp_ptr, make_cmp_ptr; intros.
   destruct Archi.ptr64.
 - econstructor; eauto.
-- econstructor; eauto. simpl. unfold Val.cmpu.
-  destruct (Val.cmpu_bool (Mem.valid_pointer m) cmp va vb) as [bo|]; inv H. auto.
+- econstructor; eauto.
 Qed.
 
 Remark make_ptrofs_of_int_correct:

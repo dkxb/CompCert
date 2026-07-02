@@ -2272,7 +2272,7 @@ Record mem_inj (f: meminj) (m1 m2: mem) : Prop :=
     mi_memval:
       forall b1 ofs b2 delta,
       f b1 = Some(b2, delta) ->
-      perm m1 b1 ofs Cur Readable ->
+      perm m1 b1 ofs Max Readable ->
       memval_inject f (ZMap.get ofs m1.(mem_contents)#b1) (ZMap.get (ofs+delta) m2.(mem_contents)#b2)
   }.
 
@@ -2331,7 +2331,7 @@ Proof.
   rewrite Nat2Z.inj_succ in H1.
   constructor.
   eapply mi_memval; eauto.
-  apply H1. lia.
+  apply perm_cur_max, H1. lia.
   replace (ofs + delta + 1) with ((ofs + 1) + delta) by lia.
   apply IHn. red; intros; apply H1; lia.
 Qed.
@@ -2433,7 +2433,7 @@ Proof.
   assert (b3 = b2) by congruence. subst b3.
   assert (delta0 = delta) by congruence. subst delta0.
   rewrite peq_true.
-  apply setN_inj with (access := fun ofs => perm m1 b1 ofs Cur Readable).
+  apply setN_inj with (access := fun ofs => perm m1 b1 ofs Max Readable).
   apply encode_val_inject; auto. intros. eapply mi_memval; eauto. eauto with mem.
   destruct (peq b3 b2). subst b3.
   (* block <> b1, block = b2 *)
@@ -2473,7 +2473,7 @@ Lemma store_outside_inj:
   mem_inj f m1 m2 ->
   (forall b' delta ofs',
     f b' = Some(b, delta) ->
-    perm m1 b' ofs' Cur Readable ->
+    perm m1 b' ofs' Max Readable ->
     ofs <= ofs' + delta < ofs + size_chunk chunk -> False) ->
   store chunk m2 b ofs v = Some m2' ->
   mem_inj f m1 m2'.
@@ -2526,7 +2526,7 @@ Proof.
   red; intros. eapply perm_storebytes_2; eauto.
 (* mem_contents *)
   intros.
-  assert (perm m1 b0 ofs0 Cur Readable). eapply perm_storebytes_2; eauto.
+  assert (perm m1 b0 ofs0 Max Readable). eapply perm_storebytes_2; eauto.
   rewrite (storebytes_mem_contents _ _ _ _ _ H0).
   rewrite (storebytes_mem_contents _ _ _ _ _ STORE).
   rewrite ! PMap.gsspec. destruct (peq b0 b1). subst b0.
@@ -2534,7 +2534,7 @@ Proof.
   assert (b3 = b2) by congruence. subst b3.
   assert (delta0 = delta) by congruence. subst delta0.
   rewrite peq_true.
-  apply setN_inj with (access := fun ofs => perm m1 b1 ofs Cur Readable); auto.
+  apply setN_inj with (access := fun ofs => perm m1 b1 ofs Max Readable); auto.
   destruct (peq b3 b2). subst b3.
   (* block <> b1, block = b2 *)
   rewrite setN_other. auto.
@@ -2576,7 +2576,7 @@ Lemma storebytes_outside_inj:
   mem_inj f m1 m2 ->
   (forall b' delta ofs',
     f b' = Some(b, delta) ->
-    perm m1 b' ofs' Cur Readable ->
+    perm m1 b' ofs' Max Readable ->
     ofs <= ofs' + delta < ofs + Z.of_nat (length bytes2) -> False) ->
   storebytes m2 b ofs bytes2 = Some m2' ->
   mem_inj f m1 m2'.
@@ -2615,7 +2615,7 @@ Proof.
   red; intros. eapply perm_storebytes_2; eauto.
 (* mem_contents *)
   intros.
-  assert (perm m1 b0 ofs Cur Readable). eapply perm_storebytes_2; eauto.
+  assert (perm m1 b0 ofs Max Readable). eapply perm_storebytes_2; eauto.
   rewrite (storebytes_mem_contents _ _ _ _ _ H0).
   rewrite (storebytes_mem_contents _ _ _ _ _ H1).
   simpl. rewrite ! PMap.gsspec.
@@ -2638,7 +2638,7 @@ Proof.
   eauto.
 (* mem_contents *)
   intros.
-  assert (perm m2 b0 (ofs + delta) Cur Readable).
+  assert (perm m2 b0 (ofs + delta) Max Readable).
     eapply mi_perm0; eauto.
   assert (valid_block m2 b0) by eauto with mem.
   rewrite <- MEM; simpl. rewrite PMap.gso. eauto with mem.
@@ -2943,7 +2943,7 @@ Theorem store_outside_extends:
   forall chunk m1 m2 b ofs v m2',
   extends m1 m2 ->
   store chunk m2 b ofs v = Some m2' ->
-  (forall ofs', perm m1 b ofs' Cur Readable -> ofs <= ofs' < ofs + size_chunk chunk -> False) ->
+  (forall ofs', perm m1 b ofs' Max Readable -> ofs <= ofs' < ofs + size_chunk chunk -> False) ->
   extends m1 m2'.
 Proof.
   intros. inversion H. constructor.
@@ -2995,7 +2995,7 @@ Theorem storebytes_outside_extends:
   forall m1 m2 b ofs bytes2 m2',
   extends m1 m2 ->
   storebytes m2 b ofs bytes2 = Some m2' ->
-  (forall ofs', perm m1 b ofs' Cur Readable -> ofs <= ofs' < ofs + Z.of_nat (length bytes2) -> False) ->
+  (forall ofs', perm m1 b ofs' Max Readable -> ofs <= ofs' < ofs + Z.of_nat (length bytes2) -> False) ->
   extends m1 m2'.
 Proof.
   intros. inversion H. constructor.
@@ -3579,7 +3579,7 @@ Theorem store_outside_inject:
   inject f m1 m2 ->
   (forall b' delta ofs',
     f b' = Some(b, delta) ->
-    perm m1 b' ofs' Cur Readable ->
+    perm m1 b' ofs' Max Readable ->
     ofs <= ofs' + delta < ofs + size_chunk chunk -> False) ->
   store chunk m2 b ofs v = Some m2' ->
   inject f m1 m2'.
@@ -3675,7 +3675,7 @@ Theorem storebytes_outside_inject:
   inject f m1 m2 ->
   (forall b' delta ofs',
     f b' = Some(b, delta) ->
-    perm m1 b' ofs' Cur Readable ->
+    perm m1 b' ofs' Max Readable ->
     ofs <= ofs' + delta < ofs + Z.of_nat (length bytes2) -> False) ->
   storebytes m2 b ofs bytes2 = Some m2' ->
   inject f m1 m2'.
@@ -4329,7 +4329,7 @@ Record unchanged_on (m_before m_after: mem) : Prop := mk_unchanged_on {
     (perm m_before b ofs k p <-> perm m_after b ofs k p);
   unchanged_on_contents:
     forall b ofs,
-    P b ofs -> perm m_before b ofs Cur Readable ->
+    P b ofs -> perm m_before b ofs Max Readable ->
     ZMap.get ofs (PMap.get b m_after.(mem_contents)) =
     ZMap.get ofs (PMap.get b m_before.(mem_contents))
 }.
@@ -4388,7 +4388,7 @@ Proof.
   destruct (range_perm_dec m b ofs (ofs + n) Cur Readable).
   rewrite pred_dec_true. f_equal.
   apply getN_exten. intros. rewrite Z2Nat.id in H by lia.
-  apply unchanged_on_contents0; auto.
+  apply unchanged_on_contents0, perm_cur_max; auto.
   red; intros. apply unchanged_on_perm0; auto.
   rewrite pred_dec_false. auto.
   red; intros; elim n0; red; intros. apply <- unchanged_on_perm0; auto.
@@ -4418,7 +4418,7 @@ Lemma load_unchanged_on_1:
 Proof.
   intros. unfold load. destruct (valid_access_dec m chunk b ofs Readable).
   destruct v. rewrite pred_dec_true. f_equal. f_equal. apply getN_exten. intros.
-  rewrite <- size_chunk_conv in H4. eapply unchanged_on_contents; eauto.
+  rewrite <- size_chunk_conv in H4. eapply unchanged_on_contents, perm_cur_max; eauto.
   split; auto. red; intros. eapply perm_unchanged_on; eauto.
   rewrite pred_dec_false. auto.
   red; intros [A B]; elim n; split; auto. red; intros; eapply perm_unchanged_on_2; eauto.
