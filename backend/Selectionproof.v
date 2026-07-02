@@ -203,7 +203,8 @@ Proof.
   intros until a. functional induction (condexpr_of_expr a); intros.
 (* compare *)
   inv H. econstructor; eauto.
-  simpl in H6. inv H6. apply Val.bool_of_val_of_optbool. auto.
+  simpl in H6. inv H6. apply Val.bool_of_val_of_optbool.
+  destruct eval_condition; inv H1. auto.
 (* condition *)
   inv H. econstructor; eauto. destruct va; eauto.
 (* let *)
@@ -222,8 +223,12 @@ Lemma eval_condition_of_expr:
   /\ eval_condition (fst (condition_of_expr a)) vl m = Some b.
 Proof.
   intros a; functional induction (condition_of_expr a); intros; simpl.
-- inv H. exists vl; split; auto.
-  simpl in H6. inv H6. apply Val.bool_of_val_of_optbool in H0. auto.
+- inv H. exists vl; split; auto. simpl in *.
+  match goal with
+  | [ |- eval_condition ?cnd ?vls m = Some b ] =>
+      destruct (eval_condition cnd vls m) eqn:EC
+  end; simpl in H6; inv H6.
+  destruct b0; inv H0; auto.
 - exists (v :: nil); split.
   constructor; auto; constructor.
   inv H0; simpl; auto.
@@ -343,10 +348,10 @@ Proof.
   eapply eval_shll; eauto.
   eapply eval_shrl; eauto.
   eapply eval_shrlu; eauto.
-  apply eval_comp; auto.
-  apply eval_compu; auto.
-  apply eval_compf; auto.
-  apply eval_compfs; auto.
+  eapply eval_comp_opt; eauto.
+  eapply eval_compu_opt; eauto.
+  eapply eval_compf_opt; eauto.
+  eapply eval_compfs_opt; eauto.
   exists v; split; auto. eapply eval_cmpl; eauto.
   exists v; split; auto. eapply eval_cmplu; eauto.
 Qed.
@@ -559,25 +564,27 @@ Proof.
             eval_expr tge sp e m le (Eop (Ointconst n) Enil) (Vint n)).
   { intros. econstructor. constructor. auto. }
   intros. eapply sel_switch_correct with (R := Rint); eauto.
-- intros until n; intros EVAL R RANGE.
-  exploit eval_comp. eexact EVAL. apply (INTCONST (Int.repr n)).
-  instantiate (1 := Ceq). intros (vb & A & B).
-  inv R. unfold Val.cmp in B. simpl in B. revert B.
+- intros until n; intros EVAL R RANGE. inv R.
+  exploit eval_comp_opt. eexact EVAL. apply (INTCONST (Int.repr n)).
+  instantiate (2 := Ceq). simpl. eauto.
+  intros (vb & A & B).
+  simpl in B. revert B.
   predSpec Int.eq Int.eq_spec n0 (Int.repr n); intros B; inv B.
   rewrite Int.unsigned_repr. unfold proj_sumbool; rewrite zeq_true; auto.
   unfold Int.max_unsigned; lia.
   unfold proj_sumbool; rewrite zeq_false; auto.
   red; intros; elim H1. rewrite <- (Int.repr_unsigned n0). congruence.
-- intros until n; intros EVAL R RANGE.
-  exploit eval_compu. eexact EVAL. apply (INTCONST (Int.repr n)).
-  instantiate (1 := Clt). intros (vb & A & B).
-  inv R. unfold Val.cmpu in B. simpl in B.
+- intros until n; intros EVAL R RANGE. inv R.
+  exploit eval_compu_opt. eexact EVAL. apply (INTCONST (Int.repr n)).
+  instantiate (2 := Clt). simpl. eauto.
+  intros (vb & A & B).
+  simpl in B.
   unfold Int.ltu in B. rewrite Int.unsigned_repr in B.
   destruct (zlt (Int.unsigned n0) n); inv B; auto.
   unfold Int.max_unsigned; lia.
-- intros until n; intros EVAL R RANGE.
+- intros until n; intros EVAL R RANGE. inv R.
   exploit eval_sub. eexact EVAL. apply (INTCONST (Int.repr n)). intros (vb & A & B).
-  inv R. simpl in B. inv B. econstructor; split; eauto.
+  simpl in B. inv B. econstructor; split; eauto.
   replace ((Int.unsigned n0 - n) mod Int.modulus)
      with (Int.unsigned (Int.sub n0 (Int.repr n))).
   constructor.
@@ -659,10 +666,11 @@ Proof.
   assert (CMPU: forall c,
     eval_binop (Ocmpu c) v1 v2 m = Some v ->
     exists v' : val, eval_binop (Ocmpu c) v1' v2' m' = Some v' /\ Val.lessdef v v').
-  { intros c A. simpl in *. inv A. econstructor; split. eauto.
-    apply Val.of_optbool_lessdef.
-    intros. apply Val.cmpu_bool_lessdef with (Mem.valid_pointer m) v1 v2; auto.
-    intros; eapply Mem.valid_pointer_extends; eauto. }
+  { intros c A. simpl in *.
+    destruct (Val.cmpu_bool (Mem.valid_pointer m) c v1 v2) as [b|] eqn:C; simpl in A; inv A.
+    eapply Val.cmpu_bool_lessdef with (valid_ptr' := (Mem.valid_pointer m')) in C;
+    eauto using Mem.valid_pointer_extends.
+    rewrite C. exists (Val.of_bool b); auto. }
   assert (CMPLU: forall c,
     eval_binop (Ocmplu c) v1 v2 m = Some v ->
     exists v' : val, eval_binop (Ocmplu c) v1' v2' m' = Some v' /\ Val.lessdef v v').

@@ -941,12 +941,11 @@ Proof.
   intros. unfold cmpl_eq_zero.
   eapply eval_splitlong_strict; eauto. intros.
   exploit eval_or. eexact H0. eexact H1. intros [v1 [A1 B1]]. simpl in B1; inv B1.
-  exploit eval_comp. eexact A1. instantiate (2 := Eop (Ointconst Int.zero) Enil). EvalOp.
-  instantiate (1 := Ceq). intros [v2 [A2 B2]].
-  unfold Val.cmp in B2; simpl in B2.
+  exploit eval_comp_opt. eexact A1. instantiate (2 := Eop (Ointconst Int.zero) Enil). EvalOp. simpl; auto.
+  instantiate (1 := Ceq). intros [v2 [A2 B2]]. simpl in B2.
   rewrite <- decompose_cmpl_eq_zero in B2.
   rewrite Int64.ofwords_recompose in B2.
-  destruct (Int64.eq x Int64.zero); inv B2; auto.
+  destruct (Int64.eq x Int64.zero); simpl in B2; inv B2; auto.
 Qed.
 
 Lemma eval_cmpl_ne_zero:
@@ -957,12 +956,11 @@ Proof.
   intros. unfold cmpl_ne_zero.
   eapply eval_splitlong_strict; eauto. intros.
   exploit eval_or. eexact H0. eexact H1. intros [v1 [A1 B1]]. simpl in B1; inv B1.
-  exploit eval_comp. eexact A1. instantiate (2 := Eop (Ointconst Int.zero) Enil). EvalOp.
-  instantiate (1 := Cne). intros [v2 [A2 B2]].
-  unfold Val.cmp in B2; simpl in B2.
+  exploit eval_comp_opt. eexact A1. instantiate (2 := Eop (Ointconst Int.zero) Enil). EvalOp. simpl; auto.
+  instantiate (1 := Cne). intros [v2 [A2 B2]]. simpl in B2.
   rewrite <- decompose_cmpl_eq_zero in B2.
   rewrite Int64.ofwords_recompose in B2.
-  destruct (negb (Int64.eq x Int64.zero)); inv B2; auto.
+  destruct (negb (Int64.eq x Int64.zero)); simpl in B2; inv B2; auto.
 Qed.
 
 Lemma eval_cmplu_gen:
@@ -1077,12 +1075,11 @@ Proof.
   destruct (is_longconst_zero b) eqn:LC.
 + exploit is_longconst_zero_sound; eauto. intros EQ; inv EQ; clear H0.
   exploit eval_highlong. eexact H. intros [v1 [A1 B1]]. simpl in B1. inv B1.
-  exploit eval_comp. eexact A1.
-  instantiate (2 := Eop (Ointconst Int.zero) Enil). EvalOp.
-  instantiate (1 := Clt). intros [v2 [A2 B2]].
-  unfold Val.cmp in B2. simpl in B2.
+  exploit eval_comp_opt. eexact A1.
+  instantiate (2 := Eop (Ointconst Int.zero) Enil). EvalOp. simpl; auto.
+  instantiate (1 := Clt). intros [v2 [A2 B2]]. simpl in B2.
   rewrite <- (Int64.ofwords_recompose x). rewrite decompose_cmpl_lt_zero.
-  destruct (Int.lt (Int64.hiword x) Int.zero); inv B2; auto.
+  destruct (Int.lt (Int64.hiword x) Int.zero); simpl in B2; inv B2; auto.
 + exploit (eval_cmpl_gen Clt Clt). eexact H. eexact H0. simpl.
   rewrite <- Int64.decompose_lt. rewrite ! Int64.ofwords_recompose. auto.
 - (* Cle *)
@@ -1096,12 +1093,11 @@ Proof.
   destruct (is_longconst_zero b) eqn:LC.
 + exploit is_longconst_zero_sound; eauto. intros EQ; inv EQ; clear H0.
   exploit eval_highlong. eexact H. intros [v1 [A1 B1]]. simpl in B1; inv B1.
-  exploit eval_comp. eexact A1.
-  instantiate (2 := Eop (Ointconst Int.zero) Enil). EvalOp.
-  instantiate (1 := Cge). intros [v2 [A2 B2]].
-  unfold Val.cmp in B2; simpl in B2.
+  exploit eval_comp_opt. eexact A1.
+  instantiate (2 := Eop (Ointconst Int.zero) Enil). EvalOp. simpl; auto.
+  instantiate (1 := Cge). intros [v2 [A2 B2]]. simpl in B2.
   rewrite <- (Int64.ofwords_recompose x). rewrite decompose_cmpl_lt_zero.
-  destruct (negb (Int.lt (Int64.hiword x) Int.zero)); inv B2; auto.
+  destruct (negb (Int.lt (Int64.hiword x) Int.zero)); simpl in B2; inv B2; auto.
 + exploit (eval_cmpl_gen Cgt Cge). eexact H. eexact H0. intros.
   rewrite <- (Int64.ofwords_recompose x). rewrite <- (Int64.ofwords_recompose y).
   rewrite Int64.decompose_le. rewrite Int.eq_sym. auto.
