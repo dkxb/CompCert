@@ -82,31 +82,7 @@ Print Assumptions framework_final_theorem.
 
 (** ** Lemma 11 CompCert Correctness *)
 Check compcert_correct.
-
-(** [Print Assumptions compcert_correct.] 
-    would result in an [Uncaught exception] which seems to be a bug of Coq. 
-    We provide an alternative way for checking 
-    the Axioms used in the proof by printing assumptions of 
-    correctness proof of each individual compilation pass. *)
-
-Print Assumptions cshmgen_proof.TRANSF_local_ldsim. 
-
-Print Assumptions cminorgenproof.TRANSF_local_ldsim.
-
-Print Assumptions selection_proof.transf_local_ldsim.
-
-Print Assumptions rtlgen_proof.transf_local_ldsim.
-
-Print Assumptions tailcall_proof.transf_local_ldsim.
-
-(** Coq bug ? *)
-(* Print Assumptions alloc_proof.transf_local_ldsim. *)
-
-Print Assumptions linearize_proof.transf_local_ldsim.
-
-Print Assumptions stacking_proof.transf_local_ldsim. 
-
-Print Assumptions asmgen_proof.transf_local_ldsim.
+Print Assumptions compcert_correct.
 
 (** ** Theorem 12 Correctness with x86-SC backend and obj *)
 Require Import FinalTheoremExt.
