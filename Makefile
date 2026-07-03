@@ -137,6 +137,59 @@ CP=cp
 VPATH=$(DIRS) $(CONCUR_DIRS)
 GPATH=$(DIRS) $(CONCUR_DIRS)
 
+# Concurrency-Part
+
+CCOMMON =\
+  Memperm.v Blockset.v GMemory.v Footprint.v InteractionSemantics.v         \
+  Injections.v MemClosures.v GAST.v LDSimDefs.v GlobDefs.v ETrace.v         \
+  GlobSemantics.v DRF.v ReachClose.v SeqCorrect.v LDSim.v ListDom.v\
+  FMemPerm.v FMemory.v FMemOpFP.v FMemtype.v MemAux.v GlobSemantics_Lemmas.v FMemLemmas.v
+
+CCOMP =\
+  val_casted.v FCop.v FMemAux.v Cop_fp.v CminorLang.v CminorWD.v AsmLang.v AsmWD.v AsmDET.v \
+  MemClosures_local.v LDSimDefs_local.v LDSim_local.v MemInterpolant.v Localize.v  ValRels.v \
+  IS_local.v MemOpFP.v ValFP.v Cop_fp_local.v DetLemma.v VundefInj.v FiniteMaps.v\
+  ClightLang.v\
+  CminorLocalize.v AsmLocalize.v LDSim_local_transitive.v\
+  AsmIDTransCorrect.v CompCorrect.v \
+  LangProps.v DisableDebug.v InjRels.v renumber.v renumber_proof.v\
+  Cminor_op_footprint.v Op_fp.v infp.v \
+  CUAST.v \
+  helpers.v Cminor_local.v selectop_proof.v splitlong_proof.v selectlong_proof.v selectdiv_proof.v \
+  selection.v selection_proof.v\
+  CminorSel_local.v rtlgen.v rtlgen_proof.v \
+  RTL_local.v RTLtyping_local.v \
+  tailcall.v tailcall_proof.v \
+  allocation.v alloc_proof.v \
+  LTL_local.v  tunneling.v tunneling_proof.v linearize.v linearize_proof.v \
+  cleanuplabels.v cleanuplabels_proof.v \
+  Linear_local.v Lineartyping_local.v loadframe.v \
+  cleanuplabels.v \
+  Mach_local.v stacking.v stacking_proof.v \
+  ASM_local.v asmgen.v asmgen_proof0.v asmgen_proof1.v  asmgen_proof.v \
+  Clight.v ClightLang.v ClightWD.v Clight_local.v cshmgen.v cshmgen_proof.v cminorgen.v cminorgen_proof.v  Csharpminor_local.v \
+  ClightLocalize.v 
+
+CFRAME =\
+  NPSemantics.v NPDet.v NPDRF.v NPEquiv.v GSimDefs.v GlobUSim.v SimDRF.v\
+  USimDRF.v GDefLemmas.v TypedSemantics.v FPLemmas.v RefineEquiv.v SmileReorder.v ConflictReorder.v PRaceLemmas.v DRFLemmas.v\
+  GlobUSimRefine.v GlobDSim.v GlobSim.v Flipping.v SimEtr.v\
+  AuxLDSim.v Invs.v Compositionality.v Soundness.v \
+  AuxLDSim.v Init.v
+
+TSOREF =\
+  SpecLang.v SpecLangIDtrans.v SpecLangWDDET.v \
+  TSOMem.v AsmTSO.v TSOGlobSem.v TSOGlobUSim.v TSOAuxDefs.v\
+  RGRels.v LockSim.v ClientSim.v AsmClientSim.v ObjectSim.v TSOMemLemmas.v TSOStepAuxLemmas.v SpecLangSim.v \
+  code.v InvRG.v LibTactics.v AuxTacLemmas.v MemLemmas.v ObjRGIProp.v LockAcqProof.v LockRelProof.v ObjLemmas.v LockProof.v \
+  SCSemLemmas.v TSOSemLemmas.v \
+  TSOCompInvs.v TSOCompositionality.v \
+  FinalTheoremExt.v
+
+CONCUR =$(CCOMMON) $(CCOMP) $(CFRAME) $(TSOREF) FinalTheorem.v Languages.v FinalTheoremExt.v 
+
+WORKINGON = $(CONCUR) 
+
 # Flocq
 
 ifeq ($(LIBRARY_FLOCQ),local)
@@ -170,7 +223,7 @@ COMMON=Errors.v AST.v Linking.v \
 # backend/ files
 BACKEND= \
   Allocation.v Asmgenproof0.v Bounds.v CleanupLabels.v \
-  Cminor.v CminorSel.v Conventions.v Kildall.v LTL.v \
+  Cminor.v Cminortyping.v CminorSel.v Conventions.v Kildall.v LTL.v \
   Linear.v Linearize.v Lineartyping.v Locations.v \
   Mach.v RTL.v RTLgen.v RTLgenspec.v RTLtyping.v \
   Registers.v Renumber.v SelectDiv.v SelectDivproof.v \
@@ -223,7 +276,8 @@ CONCUR=$(shell find concurrency -name "*.v" | sort | tr '\n' ' ')
 # All source files
 
 FILES=$(VLIB) $(COMMON) $(BACKEND) $(CFRONTEND) $(DRIVER) $(FLOCQ) \
-  $(MENHIRLIB) $(PARSER) $(EXPORTLIB)
+  $(MENHIRLIB) $(PARSER) $(EXPORTLIB) $(WORKINGON) \
+  $(CCOMMON) $(CFRAME) $(CCOMP) $(TSOREF)
 
 # Generated source files
 
@@ -241,6 +295,12 @@ common: $(COMMON:.v=.vo)
 backend: $(BACKEND:.v=.vo)
 
 cfrontend: $(CFRONTEND:.v=.vo)
+
+concur : $(CONCUR:.v=.vo)
+
+clean_concur:
+	rm -f $(patsubst %, %/*.vo, $(CONCUR_DIRS))
+	rm -f $(patsubst %, %/.*.aux, $(CONCUR_DIRS))
 
 all:
 	@test -f .depend || $(MAKE) depend
