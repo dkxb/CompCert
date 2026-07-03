@@ -566,7 +566,7 @@ Proof.
     exploit Bset.inj_range; try exact H. inv INJECT; eauto. intros [b1 INJ1].
     exploit SEPINJ. unfold Bset.inj_to_meminj. rewrite INJ1. eauto. eauto. unfold Bset.inj_to_meminj; intro C.
     destruct (inj mu b) eqn:INJ2; inv C. exploit Bset.inj_injective. inv INJECT; eauto. exact INJ1. exact INJ2. intro; subst.
-    exfalso. eapply H0; eauto. apply MAPPED. split; omega.
+    exfalso. eapply H0; eauto. apply MAPPED. split; lia.
     rewrite setN_outside in H2; [|rewrite encode_val_length, <- size_chunk_conv; auto].
     eapply unmapped_closure; eauto. intros. intro; eapply H0; eauto. eapply perm_store_1; eauto. eapply perm_store_2; eauto.
     rewrite PMap.gso in H2; auto.
@@ -580,7 +580,7 @@ Proof.
     exploit Bset.inj_range; try exact H. inv INJECT; eauto. intros [b1 INJ1].
     exploit SEPINJ. unfold Bset.inj_to_meminj. rewrite INJ1. eauto. eauto. unfold Bset.inj_to_meminj; intro C.
     destruct (inj mu b) eqn:INJ2; inv C. exploit Bset.inj_injective. inv INJECT; eauto. exact INJ1. exact INJ2. intro; subst.
-    exfalso. eapply H0; eauto. apply MAPPED. split; omega.
+    exfalso. eapply H0; eauto. apply MAPPED. split; lia.
     rewrite setN_outside; [|rewrite encode_val_length, <- size_chunk_conv; auto].
     eapply unmapped_no_undef; eauto. intros. intro; eapply H0; eauto. eapply perm_store_1; eauto. eapply perm_store_2; eauto.
     rewrite PMap.gso; auto.
@@ -594,7 +594,7 @@ Proof.
     exploit Bset.inj_range; try exact H. inv INJECT; eauto. intros [b1 INJ1].
     exploit SEPINJ. unfold Bset.inj_to_meminj. rewrite INJ1. eauto. eauto. unfold Bset.inj_to_meminj; intro C.
     destruct (inj mu b) eqn:INJ2; inv C. exploit Bset.inj_injective. inv INJECT; eauto. exact INJ1. exact INJ2. intro; subst.
-    exfalso. eapply H0; eauto. apply MAPPED. split; omega.
+    exfalso. eapply H0; eauto. apply MAPPED. split; lia.
     rewrite setN_outside; [|rewrite encode_val_length, <- size_chunk_conv; auto].
     eapply unmapped_no_vundef; eauto. intros. intro; eapply H0; eauto. eapply perm_store_1; eauto. eapply perm_store_2; eauto.
     rewrite PMap.gso; auto.
@@ -631,9 +631,9 @@ Proof.
     exploit perm_free_3; eauto. intro.
     eapply perm_free_1; eauto.
     destruct (eq_block b0 b); auto. subst. right.
-    destruct (zlt z lo); auto. destruct (zle hi z); [omega|]. exfalso.
+    destruct (zlt z lo); auto. destruct (zle hi z); [lia|]. exfalso.
     exploit INCR. unfold Bset.inj_to_meminj. rewrite H2. eauto. intro A. rewrite INJPTR in A; inv A.
-    eapply perm_free_2; eauto.  omega. }
+    eapply perm_free_2; eauto.  lia. }
   constructor. 
   * intros. exploit perm_free_3; eauto. intro. 
     erewrite unchanged_on_contents in H3.

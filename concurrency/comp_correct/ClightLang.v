@@ -305,17 +305,18 @@ with eval_lvalue: expr -> block -> ptrofs -> Prop :=
   | eval_Ederef: forall a ty l ofs,
       eval_expr a (Vptr l ofs) ->
       eval_lvalue (Ederef a ty) l ofs
- | eval_Efield_struct:   forall a i ty l ofs id co att delta,
-      eval_expr a (Vptr l ofs) ->
-      typeof a = Tstruct id att ->
-      ge.(genv_cenv)!id = Some co ->
-      field_offset ge i (co_members co) = OK delta ->
-      eval_lvalue (Efield a i ty) l (Ptrofs.add ofs (Ptrofs.repr delta))
- | eval_Efield_union:   forall a i ty l ofs id co att,
-      eval_expr a (Vptr l ofs) ->
-      typeof a = Tunion id att ->
-      ge.(genv_cenv)!id = Some co ->
-      eval_lvalue (Efield a i ty) l ofs.
+	 | eval_Efield_struct:   forall a i ty l ofs id co att delta,
+	      eval_expr a (Vptr l ofs) ->
+	      typeof a = Tstruct id att ->
+	      ge.(genv_cenv)!id = Some co ->
+	      field_offset ge i (co_members co) = OK (delta, Full) ->
+	      eval_lvalue (Efield a i ty) l (Ptrofs.add ofs (Ptrofs.repr delta))
+	 | eval_Efield_union:   forall a i ty l ofs id co att delta,
+	      eval_expr a (Vptr l ofs) ->
+	      typeof a = Tunion id att ->
+	      ge.(genv_cenv)!id = Some co ->
+	      union_field_offset ge i (co_members co) = OK (delta, Full) ->
+	      eval_lvalue (Efield a i ty) l (Ptrofs.add ofs (Ptrofs.repr delta)).
 
 Inductive eval_expr_fp: expr -> footprint -> Prop :=
 | eval_Econst_int_fp: forall i ty,
@@ -418,18 +419,18 @@ Proof proj2 eval_expr_lvalue_fp_exists.
   and produces the list of cast values [vl].  It is used to
   evaluate the arguments of function calls. *)
 
-Inductive eval_exprlist: list expr -> typelist -> list val -> Prop :=
+Inductive eval_exprlist: list expr -> list type -> list val -> Prop :=
   | eval_Enil:
-      eval_exprlist nil Tnil nil
+      eval_exprlist nil nil nil
   | eval_Econs:   forall a bl ty tyl v1 v2 vl,
       eval_expr a v1 ->
       sem_cast v1 (typeof a) ty m = Some v2 ->
       eval_exprlist bl tyl vl ->
-      eval_exprlist (a :: bl) (Tcons ty tyl) (v2 :: vl).
+      eval_exprlist (a :: bl) (ty :: tyl) (v2 :: vl).
 
-Inductive eval_exprlist_fp : list expr -> typelist -> footprint -> Prop :=
+Inductive eval_exprlist_fp : list expr -> list type -> footprint -> Prop :=
 | eval_fp_Enil:
-    eval_exprlist_fp nil Tnil empfp
+    eval_exprlist_fp nil nil empfp
 | eval_fp_Econs: forall a bl ty tyl v1 fp1 v2 fp2 fp3 fp,
     eval_expr a v1 ->
     eval_expr_fp a fp1 ->
@@ -437,7 +438,7 @@ Inductive eval_exprlist_fp : list expr -> typelist -> footprint -> Prop :=
     sem_cast_fp v1 (typeof a) ty m = Some fp2 ->
     eval_exprlist_fp bl tyl fp3 ->
     FP.union (FP.union fp1 fp2) fp3 = fp ->
-    eval_exprlist_fp (a :: bl) (Tcons ty tyl) fp.
+    eval_exprlist_fp (a :: bl) (ty :: tyl) fp.
               
 Lemma eval_exprlist_fp_exists:
   forall bl tyl vl,
@@ -747,13 +748,14 @@ Definition after_external (c: core) (rv: option val) : option core :=
     Core_Callstate fd vargs k =>
     match fd with
     | External (EF_external name sig) tps tp cc =>
-      match rv, sig_res sig with
-        Some v, Some ty =>
-        if val_has_type_func v ty then  Some(Core_Returnstate v k)
-        else None
-      | None, None  => Some(Core_Returnstate Vundef k)
-      | _,_ => None
-      end
+	      match rv, sig_res sig with
+	        Some v, Xvoid => None
+	      | Some v, ty =>
+	        if val_has_type_func v (proj_xtype ty) then  Some(Core_Returnstate v k)
+	        else None
+	      | None, Xvoid  => Some(Core_Returnstate Vundef k)
+	      | None, _ => None
+	      end
     | _ => None
     end
   | _ => None

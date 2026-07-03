@@ -48,10 +48,10 @@ Program Definition ge_extend {F V: Type}
               (Genv.genv_symb ge)
               (Genv.genv_defs ge) bound _ _ _.
 Next Obligation.
-  exploit Genv.genv_symb_range; eauto. intros. xomega.
+  exploit Genv.genv_symb_range; eauto. intros. extlia.
 Qed.
 Next Obligation.
-  exploit Genv.genv_defs_range; eauto. intros. xomega.
+  exploit Genv.genv_defs_range; eauto. intros. extlia.
 Qed.
 Next Obligation.
   eapply (Genv.genv_vars_inj ge); eauto.
@@ -474,7 +474,7 @@ Definition read_as_zero_fm {F V: Type} (ge: Genv.t F V)
   (align_chunk chunk | p) ->
   FMemory.Mem.load chunk m b p =
   Some (match chunk with
-        | Mint8unsigned | Mint8signed | Mint16unsigned | Mint16signed | Mint32 => Vint Int.zero
+        | Mbool | Mint8unsigned | Mint8signed | Mint16unsigned | Mint16signed | Mint32 => Vint Int.zero
         | Mint64 => Vlong Int64.zero
         | Mfloat32 => Vsingle Float32.zero
         | Mfloat64 => Vfloat Float.zero
@@ -508,7 +508,7 @@ Fixpoint load_store_init_data_fm {F V: Type} (ge: Genv.t F V)
     /\ load_store_init_data_fm ge m b (p + size_chunk Mptr) il'
   | Init_space n :: il' =>
     read_as_zero_fm ge m b p n
-    /\ load_store_init_data_fm ge m b (p + Zmax n 0) il'
+    /\ load_store_init_data_fm ge m b (p + Z.max n 0) il'
   end.
 
 Definition globals_initialized_fmem {F V: Type} (ge: Genv.t F V) (fm: FMemory.Mem.mem) : Prop :=

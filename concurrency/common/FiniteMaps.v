@@ -2,34 +2,20 @@
 
 Require Import Coqlib.
 Require Import Maps.
+Require Import Zwf.
 
 Section FINITE.
 
 Variable A: Type.
 
-Lemma ptree_finite:
-  forall (t: PTree.t A), exists p, forall n, (p <= n)%positive -> PTree.get n t = None.
-Proof.
-  induction t.
-- (* Leaf case *)
-  exists 1%positive; intros. apply PTree.gempty. 
-- (* Node case *)
-  destruct IHt1 as [p1 N1]. destruct IHt2 as [p2 N2].
-  exists (Pos.max (xO p1) (xI p2)); intros.
-  destruct n; simpl.
-  apply N2. zify; omega. 
-  apply N1. zify; omega.
-  zify; omegaContradiction.
-Qed.
-
 Lemma ptree_finite_type:
   forall (t: PTree.t A), {p:positive & forall n, (p <= n)%positive -> PTree.get n t = None}.
 Proof.
   cut (forall (l: list (positive*A)), {p:positive & forall a n, (p <= n)%positive -> ~ In (n,a) l}).
-  { intros. 
+  { intros.
     destruct (X (PTree.elements t)) as [N condition].
     exists N; intros.
-    destruct (t!n) eqn:mapget; trivial. 
+    destruct (t!n) eqn:mapget; trivial.
     apply PTree.elements_correct in mapget.
     contradict mapget; apply condition; trivial. }
   { induction l.
@@ -37,10 +23,15 @@ Proof.
     + destruct IHl as [N condition]; destruct a as [a A'].
       exists (Pos.max N (a + 1)); intros.
       simpl; intros HH; destruct HH as [HH | HH].
-      - inversion HH; subst.
-        contradict H. xomega.
-      - assert (ineq: (N <= n)%positive) by xomega.
+      - inversion HH; subst. lia.
+      - assert (ineq: (N <= n)%positive) by lia.
         eapply (condition _ _ ineq HH). }
+Qed.
+
+Lemma ptree_finite:
+  forall (t: PTree.t A), exists p, forall n, (p <= n)%positive -> PTree.get n t = None.
+Proof.
+  intros. destruct (ptree_finite_type t) as [p H]. eauto.
 Qed.
 
 Lemma pmap_finite:
@@ -72,19 +63,19 @@ Proof.
     intros x0; pattern x0.
     apply Pos.peano_rect; intros.
     exists (PMap.init dfl). intros. rewrite PMap.gi.
-      destruct H0. xomega.
+      destruct H0. lia.
       symmetry. apply OUTSIDE. assumption. 
     - (* Inductive case *)
-    assert (HP: (p <= hi)%positive). xomega.
+    assert (HP: (p <= hi)%positive). lia.
     destruct (H HP) as [m P]. clear H HP.
     exists (PMap.set p (f p) m); intros.
     rewrite PMap.gsspec.
     destruct (peq n p). 
     congruence.
-    apply P. destruct H. left. xomega. right; assumption. 
+    apply P. destruct H. left. lia. right; assumption. 
   }
-  destruct (REC hi) as [m P]. xomega. 
-  exists m; intros. apply P. xomega.
+  destruct (REC hi) as [m P]. lia. 
+  exists m; intros. apply P. lia.
 Qed.
 
 Lemma zmap_finite:
@@ -94,7 +85,7 @@ Proof.
   destruct (pmap_finite m) as [p D].
   exists (-2 * Z.pos p); exists (2 * Z.pos p); intros.
   unfold ZMap.get. apply D. 
-  unfold ZIndexed.index. destruct n; zify; omega. 
+  unfold ZIndexed.index. destruct n; lia. 
 Qed.
 
 Lemma zmap_finite_type:
@@ -105,10 +96,8 @@ Proof.
   destruct (pmap_finite_type m) as [p D].
   exists (-2 * Z.pos p); exists (2 * Z.pos p); intros.
   unfold ZMap.get. apply D. 
-  unfold ZIndexed.index. destruct n; zify; omega. 
+  unfold ZIndexed.index. destruct n; lia. 
 Qed.
-
-Require Import Zwf.
 
 Lemma zmap_construct:
   forall (f: Z -> A) lo hi dfl,
@@ -122,17 +111,17 @@ Proof.
     intros x0; pattern x0; apply (well_founded_ind (Zwf_well_founded lo)); intros.
     destruct (zlt x lo).
   - (* Base case *)
-    exists (ZMap.init dfl). intros. rewrite ZMap.gi. symmetry. apply OUTSIDE. omega. 
+    exists (ZMap.init dfl). intros. rewrite ZMap.gi. symmetry. apply OUTSIDE. lia. 
   - (* Inductive case *)
     destruct (H (x - 1)) as [m P].
-    red. omega. omega. 
+    red. lia. lia. 
     exists (ZMap.set x (f x) m); intros.
     rewrite ZMap.gsspec. unfold ZIndexed.eq. destruct (zeq n x). 
     congruence.
-    apply P. omega. 
+    apply P. lia. 
   }
-  destruct (REC hi) as [m P]. omega. 
-  exists m; intros. apply P. omega.
+  destruct (REC hi) as [m P]. lia. 
+  exists m; intros. apply P. lia.
 Qed.
 
 Lemma zmap_construct_type:
@@ -147,17 +136,17 @@ Proof.
     intros x0. pattern x0. apply (well_founded_induction_type (Zwf_well_founded lo)); intros.
     destruct (zlt x lo).
   - (* Base case *)
-    exists (ZMap.init dfl). intros. rewrite ZMap.gi. symmetry. apply OUTSIDE. omega. 
+    exists (ZMap.init dfl). intros. rewrite ZMap.gi. symmetry. apply OUTSIDE. lia. 
   - (* Inductive case *)
     destruct (X (x - 1)) as [m P].
-    red. omega. omega. 
+    red. lia. lia. 
     exists (ZMap.set x (f x) m); intros.
     rewrite ZMap.gsspec. unfold ZIndexed.eq. destruct (zeq n x). 
     congruence.
-    apply P. omega. 
+    apply P. lia. 
   }
-  destruct (REC hi) as [m P]. omega. 
-  exists m; intros. apply P. omega.
+  destruct (REC hi) as [m P]. lia. 
+  exists m; intros. apply P. lia.
 Qed.
 
 End FINITE.
@@ -169,26 +158,13 @@ Section FINITE_CONSTRUCTIVE.
 
 Variable A: Type.
 
-Fixpoint p_tree_finite_c (t: PTree.t A) : positive :=
-  match t with
-    PTree.Leaf => 1%positive
-  | PTree.Node l _ r => Pos.max (xO (p_tree_finite_c l)) (xI (p_tree_finite_c r))
-  end.
+Definition p_tree_finite_c (t: PTree.t A) : positive :=
+  projT1 (ptree_finite_type A t).
 
 Lemma ptree_finite_c_sound:
   forall (t: PTree.t A) n, ((p_tree_finite_c t) <= n)%positive -> PTree.get n t = None.
 Proof.
-  induction t.
-- (* Leaf case *)
-  simpl. intros. apply PTree.gempty. 
-- (* Node case *)
-  (*destruct IHt1 as [p1 N1]. destruct IHt2 as [p2 N2].
-  exists (Pos.max (xO p1) (xI p2));*)
-  intros.
-  destruct n; simpl in *.
-  apply IHt2. zify; omega. 
-  apply IHt1. zify; omega. 
-  zify; omegaContradiction.
+  intros. unfold p_tree_finite_c. apply (projT2 (ptree_finite_type A t)). exact H.
 Qed.
 
 Definition pmap_finite_c (m: PMap.t A) : positive :=
@@ -215,17 +191,17 @@ Proof.
     exists (PMap.init dfl). simpl.
     split; trivial.
     intros. rewrite PMap.gi.
-      destruct H0. xomega.
+      destruct H0. lia.
       symmetry. apply OUTSIDE. assumption. 
   - (* Inductive case *)
-    assert (HP: (p <= hi)%positive). xomega.
+    assert (HP: (p <= hi)%positive). lia.
     destruct (X HP) as [m [PDef P]]. clear X HP.
     exists (PMap.set p (f p) m); simpl.
     split; trivial.
     intros. rewrite PMap.gsspec.
        destruct (peq n p). 
        congruence.
-       apply P. destruct H0. left. xomega. right; assumption. 
+       apply P. destruct H0. left. lia. right; assumption. 
 Defined.
 
 Definition pmap_construct_c
@@ -235,10 +211,10 @@ Definition pmap_construct_c
                   forall n, PMap.get n m = f n}.
 Proof.
  destruct (REC_p f hi dfl OUTSIDE hi) as [m [PDef P]].
-   xomega.
+   lia.
    exists m.
    split; trivial.
-   intros. apply P. xomega.
+   intros. apply P. lia.
 Defined. 
 
 (*I'd really like to replace dfl hi with dfl n in OUTSIDE, 
@@ -256,17 +232,17 @@ Proof.
     exists (PMap.init (dfl hi)). simpl.
     split; trivial.
     intros. rewrite PMap.gi.
-      destruct H0. xomega.
+      destruct H0. lia.
       symmetry. apply OUTSIDE. assumption. 
   - (* Inductive case *)
-    assert (HP: (p <= hi)%positive). xomega.
+    assert (HP: (p <= hi)%positive). lia.
     destruct (X HP) as [m [PDef P]]. clear X HP.
     exists (PMap.set p (f p) m); simpl.
     split; trivial.
     intros. rewrite PMap.gsspec.
        destruct (peq n p). 
        congruence.
-       apply P. destruct H0. left. xomega. right; assumption. 
+       apply P. destruct H0. left. lia. right; assumption. 
 Defined.
 
 Definition pmap_construct_dep
@@ -276,10 +252,10 @@ Definition pmap_construct_dep
                   forall n, PMap.get n m = f n}.
 Proof.
  destruct (REC_d f hi dfl OUTSIDE hi) as [m [PDef P]].
-   xomega.
+   lia.
    exists m.
    split; trivial.
-   intros. apply P. xomega.
+   intros. apply P. lia.
 Defined. 
 
 Definition zmap_finite_c (m: ZMap.t A): Z * Z :=
@@ -293,7 +269,7 @@ Proof.
   assert (D:= pmap_finite_sound_c m).
   unfold zmap_finite_c in H. inv H.
   unfold ZMap.get. apply D. 
-  unfold ZIndexed.index. destruct n; zify; omega.
+  unfold ZIndexed.index. destruct n; lia.
 Qed. 
 
 Definition REC (f: Z -> A) (lo hi:Z) (dfl:A)
@@ -307,17 +283,17 @@ apply (well_founded_induction_type (Zwf_well_founded lo)); intros.
      exists (ZMap.init dfl).
       split. reflexivity.
       intros. rewrite ZMap.gi.
-              symmetry. apply OUTSIDE. omega.
+              symmetry. apply OUTSIDE. lia.
   - (* Inductive case *)
     destruct (X (x - 1)) as [m [Pdef P]].
-    red. omega. omega. 
+    red. lia. lia. 
     exists (ZMap.set x (f x) m); intros.
     simpl.
     split; trivial.
     intros. rewrite ZMap.gsspec. unfold ZIndexed.eq.
     destruct (zeq n x). 
            congruence.
-           apply P. omega.
+           apply P. lia.
 Defined.
 
 Definition zmap_construct_c
@@ -325,8 +301,8 @@ Definition zmap_construct_c
     (OUTSIDE: forall n, n < lo \/ n > hi -> f n = dfl) : 
   { m : ZMap.t A | fst m = dfl /\ forall n,  ZMap.get n m = f n}. 
  destruct (REC f lo hi dfl OUTSIDE hi) as [m [PDef P]].
-   omega.
-   exists m. split; trivial. intros. apply P. omega.
+   lia.
+   exists m. split; trivial. intros. apply P. lia.
 Defined. 
 
 End FINITE_CONSTRUCTIVE.
