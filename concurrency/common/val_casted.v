@@ -71,12 +71,12 @@ Proof.
 Qed.
 
 (** val_casted for value list *)
-Inductive val_casted_list: list val -> typelist -> Prop :=
+Inductive val_casted_list: list val -> list type -> Prop :=
   | vcl_nil:
-      val_casted_list nil Tnil
+      val_casted_list nil nil
   | vcl_cons: forall v1 vl ty1 tyl,
       val_casted v1 ty1 -> val_casted_list vl tyl ->
-      val_casted_list (v1 :: vl) (Tcons  ty1 tyl).
+      val_casted_list (v1 :: vl) (ty1 :: tyl).
 
 Lemma val_casted_list_params:
   forall params vl,
@@ -88,10 +88,10 @@ Proof.
   destruct a as [id ty]. inv H. constructor; auto. 
 Qed.
 
-Fixpoint val_casted_list_func (vs : list val) (ts : typelist) : bool :=
+Fixpoint val_casted_list_func (vs : list val) (ts : list type) : bool :=
   match vs, ts with
-    | nil, Tnil => true
-    | v1 :: vl, Tcons ty1 tyl => 
+    | nil, nil => true
+    | v1 :: vl, ty1 :: tyl =>
       val_casted_func v1 ty1 && val_casted_list_func vl tyl
     | _, _ => false
   end.
@@ -209,11 +209,11 @@ simpl. split. intros [H H2].
 Qed.
 
 
-Fixpoint tys_nonvoid (tyl : typelist) :=
+Fixpoint tys_nonvoid (tyl : list type) :=
   match tyl with
-    | Tnil => true
-    | Tcons Tvoid tyl' => false
-    | Tcons _ tyl' => tys_nonvoid tyl'
+    | nil => true
+    | Tvoid :: tyl' => false
+    | _ :: tyl' => tys_nonvoid tyl'
   end.
 
 Fixpoint vals_defined (vl : list val) :=
@@ -393,7 +393,7 @@ Proof.
   assert (wd_args args tyl = true).
   { unfold wd_args in *. InvBooleans. simpl in H2, H0. InvBooleans.
     rewrite H4. assert (vals_defined args = true) by (destruct a; auto; discriminate). rewrite H0.
-    rewrite Zlength_cons in H. destruct zlt; auto. omega. }
+    rewrite Zlength_cons in H. destruct zlt; auto. lia. }
   eapply IHargs in H5; try eassumption. 
   unfold wd_args in *. InvBooleans. rewrite andb_true_iff; split.
   simpl in H0, H9|- * . InvBooleans. rewrite H4.
@@ -406,7 +406,7 @@ Qed.
 Require Import Conventions1.
 Lemma wd_args_set_arguments_get_agree:
   forall sg args locs ls,
-    wd_args args (sig_args sg) = true ->
+    wd_args args (proj_sig_args sg) = true ->
     locs = loc_arguments sg ->
     set_arguments locs args (Locmap.init Vundef) = ls ->
     forall n l, nth_error locs n = Some l ->
@@ -419,9 +419,10 @@ Lemma wd_args_set_arguments_get_agree:
                 end.
 Proof.
   clear. unfold loc_arguments.
-  destruct Archi.ptr64 eqn:C; inv C. destruct sg. simpl. clear. intros args locs ls.
+  destruct Archi.ptr64 eqn:C; inv C. intros sg args locs ls.
   unfold wd_args. repeat rewrite andb_true_iff. intros ((? & ?) & _) Hlocs Hls. subst.
   generalize 0. generalize dependent args.
+  generalize (proj_sig_args sg); clear sg; intro sig_args.
   induction sig_args; simpl; intros.
   destruct n; inversion H1.
   destruct args as [|v args]; [inversion H| specialize (IHsig_args args)].
@@ -434,20 +435,20 @@ Proof.
     try (destruct v; inv vTyp; try congruence; rewrite Locmap.gss; auto; fail).
   rewrite Locmap.gss. rewrite Locmap.gso, Locmap.gss. simpl.
   destruct v; inversion vTyp; try contradiction. simpl. auto.
-  right. simpl; omega.
+  right. simpl; lia.
   (* n > 0 *)
   destruct (IHsig_args argsTyp argsDef (z + typesize a) n _ H1) as [v' [Hnth Hagree]].
   exists v'. split; [auto|]. simpl in H1|-* . 
   apply nth_error_in, loc_arguments_32_charact in H1.  
   destruct l; unfold Locmap.getpair; simpl in H1. 
   { destruct a; rewrite Locmap.gso; auto; 
-      try (destruct r; simpl in *; [auto| right; destruct sl; try tauto; omega; fail]).
-    simpl. rewrite Locmap.gso; auto. simpl. destruct r; auto; destruct sl; auto. simpl in H1. right. omega. }
+      try (destruct r; simpl in *; [auto| right; destruct sl; try tauto; lia; fail]).
+    simpl. rewrite Locmap.gso; auto. simpl. destruct r; auto; destruct sl; auto. simpl in H1. right. lia. }
   { destruct H1 as [Hhi Hlo].
     destruct a; repeat rewrite Locmap.gso; auto;
       repeat match goal with
              | |- Loc.diff _ ?x => destruct x; simpl in *; auto
-             | |- ?x <> ?x \/ _ => right; omega
+             | |- ?x <> ?x \/ _ => right; lia
              | |- _ <> ?x \/ _  => destruct x; auto
              end.
   }
@@ -455,12 +456,13 @@ Qed.
 
 Lemma wd_args_set_arguments_eq:
   forall args sg,
-    wd_args args (sig_args sg) = true ->
+    wd_args args (proj_sig_args sg) = true ->
     args = (map (fun p => Locmap.getpair p (set_arguments (loc_arguments sg) args (Locmap.init Vundef))) (loc_arguments sg)).
 Proof.
   clear. unfold loc_arguments.
-  destruct Archi.ptr64 eqn:C; inv C. destruct sg. simpl. clear. 
-  unfold wd_args. repeat rewrite andb_true_iff. intros ((? & ?) & _). 
+  destruct Archi.ptr64 eqn:C; inv C. intros args sg.
+  generalize (proj_sig_args sg); clear sg; intro sig_args.
+  unfold wd_args. repeat rewrite andb_true_iff. intros ((? & ?) & _).
   generalize 0. generalize dependent args.
   induction sig_args; simpl; intros.
   destruct args; auto. inversion H.
@@ -472,15 +474,15 @@ Proof.
   apply val_has_type_funcP in vTyp.
   destruct v, a; try contradiction; simpl in *; try (rewrite Locmap.gss; simpl; auto; fail).
   rewrite Locmap.gss. rewrite Locmap.gso, Locmap.gss. simpl. rewrite Int64.ofwords_recompose; auto.
-  red; simpl; right; omega. inversion vTyp.
+  red; simpl; right; lia. inversion vTyp.
   specialize (IHsig_args argsTyp argsDef (z + typesize a)).
   rewrite IHsig_args at 1. clear. apply map_ext_in; intros.
   apply loc_arguments_32_charact in H. destruct a0; simpl in *.
   destruct r; simpl in *; try contradiction. destruct sl; try contradiction.
-  destruct a; simpl; repeat (rewrite Locmap.gso; [auto| red; right; simpl in *; omega]).
+  destruct a; simpl; repeat (rewrite Locmap.gso; [auto| red; right; simpl in *; lia]).
   destruct rhi, rlo; simpl in *; try intuition.
   destruct sl, sl0; simpl in *; try intuition.
-  destruct a; simpl; repeat (rewrite Locmap.gso; [auto| red; right; simpl in *; omega]).
+  destruct a; simpl; repeat (rewrite Locmap.gso; [auto| red; right; simpl in *; lia]).
 Qed.
 
 (** TODO: move to val_casted *)
@@ -522,18 +524,18 @@ Proof.
                        (Locmap.set ?lo ?vlo
                                    (Locmap.set ?head ?vhead _)) = _ =>
           rewrite (locmap_set_reorder lo head); 
-            [rewrite (locmap_set_reorder hi head);[|simpl;right;omega]
-            |simpl;right;omega]
+            [rewrite (locmap_set_reorder hi head);[|simpl;right;lia]
+            |simpl;right;lia]
         | |- Locmap.set ?x ?v (Locmap.set ?head ?vhead _) = _ =>
-          rewrite (locmap_set_reorder x head);[|simpl;right;omega]
+          rewrite (locmap_set_reorder x head);[|simpl;right;lia]
         end;
     try
       match goal with
       | |- context[?x + ?y + ?z] =>
-        replace (x + y + z) with (x + z + y) by omega;
+        replace (x + y + z) with (x + z + y) by lia;
           rewrite IHtyl;
-          [replace (x + z + y) with (x + y + z) by omega; auto|
-           simpl; omega]
+          [replace (x + z + y) with (x + y + z) by lia; auto|
+           simpl; lia]
       end.
 
   destruct args; [auto|]; fold set_arguments loc_arguments_32.
@@ -549,22 +551,22 @@ Proof.
         [rewrite (locmap_set_reorder hi headhi);
          [rewrite (locmap_set_reorder lo headlo);
           [rewrite (locmap_set_reorder hi headlo);
-           [|simpl;right;omega]
-          |simpl;right;omega]
-         |simpl;right;omega]
-        |simpl;right;omega]
+           [|simpl;right;lia]
+          |simpl;right;lia]
+         |simpl;right;lia]
+        |simpl;right;lia]
     | |- Locmap.set ?l ?v
                    (Locmap.set ?headhi ?vhi
                                (Locmap.set ?headlo ?vlo _)) = _ =>
       rewrite (locmap_set_reorder l headhi); 
-        [rewrite (locmap_set_reorder l headlo);[|simpl;right;omega]
-        |simpl;right;omega]
+        [rewrite (locmap_set_reorder l headlo);[|simpl;right;lia]
+        |simpl;right;lia]
     end;
     match goal with
     | |- context[set_arguments (loc_arguments_32 _ (?x + ?y + ?z))] =>
-      replace (x + y + z) with (x + z + y) by omega;
+      replace (x + y + z) with (x + z + y) by lia;
         rewrite IHtyl;
-        [replace (x + z + y) with (x + y + z) by omega; auto|
-         simpl; omega]
+        [replace (x + z + y) with (x + y + z) by lia; auto|
+         simpl; lia]
     end.
 Qed.

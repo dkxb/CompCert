@@ -1,4 +1,4 @@
-Require Import Values Footprint.
+Require Import Values Footprint Lia.
 
 
 (** * Event and Trace *)
@@ -221,7 +221,7 @@ Section Etrace.
         rewrite tau_plus_tau_N_equiv  in H0.
         rewrite <- tau_star_tau_N_equiv in H.
         destruct H. destruct H0. exists (x+x0).
-        assert(L:S(x + x0) = x + (S x0)). Omega.omega.
+        assert(L:S(x + x0) = x + (S x0)). lia.
         rewrite L.
         eapply tau_N_cons;eauto.
       }

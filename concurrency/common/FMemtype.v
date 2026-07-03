@@ -335,6 +335,7 @@ Axiom load_cast:
   forall m chunk b ofs v,
   load chunk m b ofs = Some v ->
   match chunk with
+  | Mbool => v = Val.norm_bool v
   | Mint8signed => v = Val.sign_ext 8 v
   | Mint8unsigned => v = Val.zero_ext 8 v
   | Mint16signed => v = Val.sign_ext 16 v
