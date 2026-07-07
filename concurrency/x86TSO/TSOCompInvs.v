@@ -76,7 +76,12 @@ Lemma ptree_set_reorder:
     i <> j ->
     Maps.PTree.set i v1 (Maps.PTree.set j v2 m) =
     Maps.PTree.set j v2 (Maps.PTree.set i v1 m).
-Proof. induction i;intros;destruct m,j;simpl;auto;try (rewrite IHi;auto;intro;subst);contradiction. Qed.
+Proof.
+  intros A i j m v1 v2 Hneq.
+  apply PTree.extensionality; intro k.
+  rewrite !PTree.gsspec.
+  destruct (peq k i); destruct (peq k j); subst; try congruence; reflexivity.
+Qed.
 
 Lemma pmap_set_reorder:
   forall A i j m (v1 v2:A),
@@ -1339,13 +1344,13 @@ Section Invs.
                                        (ModSem.Ge (GlobEnv.modules SGE ix))
                                        sc
                            = None).
-          { apply thdp_sims in Hmatch. apply thread_simulation with (t0 := t) in Hmatch; simpl in Hmatch.
+          { apply thdp_sims in Hmatch. apply thread_simulation with (t := t) in Hmatch; simpl in Hmatch.
             rewrite <- H, H_tp_core in Hmatch. inv Hmatch.
             erewrite <- ClientSim.match_at_external; eauto.
             eapply tsostep_not_atext; eauto.
           }
           assert (Hnhalt: halt (ModSem.lang (GlobEnv.modules SGE ix)) sc = None).
-          { apply thdp_sims in Hmatch. apply thread_simulation with (t0 := t) in Hmatch; simpl in Hmatch.
+          { apply thdp_sims in Hmatch. apply thread_simulation with (t := t) in Hmatch; simpl in Hmatch.
             rewrite <- H, H_tp_core in Hmatch. inv Hmatch.
             erewrite <- ClientSim.match_halted; eauto.
             eapply tsostep_not_halted; eauto. }
@@ -2563,13 +2568,13 @@ Section Invs.
                                        (ModSem.Ge (GlobEnv.modules SGE ix))
                                        sc
                          = None).
-        { apply thdp_sims in MATCH. apply thread_simulation with (t0 := cid tpc) in MATCH; simpl in MATCH.
+        { apply thdp_sims in MATCH. apply thread_simulation with (t := cid tpc) in MATCH; simpl in MATCH.
           rewrite <- H3, H0 in MATCH. inv MATCH. 
           erewrite <- ClientSim.match_at_external; eauto.
           eapply tsostep_not_atext; eauto.
         }
         assert (Hnhalt: halt (ModSem.lang (GlobEnv.modules SGE ix)) sc = None).
-        { apply thdp_sims in MATCH. apply thread_simulation with (t0 := cid tpc) in MATCH; simpl in MATCH.
+        { apply thdp_sims in MATCH. apply thread_simulation with (t := cid tpc) in MATCH; simpl in MATCH.
           rewrite <- H3, H0 in MATCH. inv MATCH.
           erewrite <- ClientSim.match_halted; eauto.
           eapply tsostep_not_halted; eauto. }
@@ -3988,7 +3993,8 @@ Section Invs.
         exploit thread_simulation. eauto. rewrite Htp. intro A; inv A.
         apply tp_inv_src in MATCH0.
         destruct (plt (cur_tid spc0) (ThreadPool.next_tid (thread_pool spc0))); auto.
-        apply ThreadPool.tp_finite in n; auto.
+        assert ((ThreadPool.next_tid (thread_pool spc0) <= cur_tid spc0)%positive) by extlia.
+        apply ThreadPool.tp_finite in H1; auto.
         unfold ThreadPool.get_cs in H0. congruence.
       }
       Lemma tso_globstep_valid_tid:
@@ -4094,7 +4100,8 @@ Section Invs.
           instantiate (1:= t). intros. inv H1. rewrite <- H5 in H0. contradiction.
           unfold thrd_valid, TSOThrdPool.valid_tid. rewrite <- H2.
           destruct (plt t (ThreadPool.next_tid (thread_pool spc))); auto.
-          eapply ThreadPool.tp_finite in n. unfold ThreadPool.get_cs in *. congruence.
+          assert ((ThreadPool.next_tid (thread_pool spc) <= t)%positive) by extlia.
+          eapply ThreadPool.tp_finite in H1; eauto. unfold ThreadPool.get_cs in *. congruence.
           inv H; auto.
         Qed.
         eapply glob_step_valid'; eauto.
@@ -4168,7 +4175,8 @@ Section Invs.
             inv H1. exfalso. rewrite Hthdp in H4. discriminate. 
             split. unfold thrd_valid, TSOThrdPool.valid_tid. rewrite <- H0.
             destruct (plt (cid tpc2) (ThreadPool.next_tid (thread_pool spc1))); auto.
-            eapply ThreadPool.tp_finite in n. unfold ThreadPool.get_cs in H2. congruence.
+            assert ((ThreadPool.next_tid (thread_pool spc1) <= cid tpc2)%positive) by extlia.
+            eapply ThreadPool.tp_finite in H1; eauto. unfold ThreadPool.get_cs in H2. congruence.
             eapply tp_inv_src. eauto.
             unfold thrd_not_halted. intro. inv H1. congruence.
           }
@@ -4403,7 +4411,8 @@ Section Invs.
             inv H1. exfalso. rewrite Hthdp in H4. discriminate. 
             split. unfold thrd_valid, TSOThrdPool.valid_tid. rewrite <- H0.
             destruct (plt (cid tpc2) (ThreadPool.next_tid (thread_pool spc1))); auto.
-            eapply ThreadPool.tp_finite in n. unfold ThreadPool.get_cs in H2. congruence.
+            assert ((ThreadPool.next_tid (thread_pool spc1) <= cid tpc2)%positive) by extlia.
+            eapply ThreadPool.tp_finite in H1; eauto. unfold ThreadPool.get_cs in H2. congruence.
             eapply tp_inv_src. eauto.
             unfold thrd_not_halted. intro. inv H1. congruence. }
           assert (exists _tpc2, tso_globstep tpc1 sw FP.emp _tpc2 /\

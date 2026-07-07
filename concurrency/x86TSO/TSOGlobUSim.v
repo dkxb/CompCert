@@ -190,13 +190,13 @@ Proof.
   specialize (HSim _ _ _ _ _ _ _ Hinitrel Hinitsc Hdrf Hsafe Hinittso).
   destruct HSim as [match_state [HSim MS]].
   clear Hinitrel Hinitsc Hinittso sgm tgm t. 
-  revert tpc spc Hdrf Hsafe MS . cofix.
+  revert tpc spc Hdrf Hsafe MS . cofix CIH.
   destruct B; intros; try (inv H0; fail).
-  { clear tso_globusim_refinement. inv H. inv H1.
+  { clear CIH. inv H. inv H1.
     exploit non_evt_star_sim; eauto. intros (fpS & spc' & Hstar & MS').
     eapply match_final in MS'; eauto. econstructor; eauto.
   }
-  { clear tso_globusim_refinement. inv H. inv H1.
+  { clear CIH. inv H. inv H1.
     exploit non_evt_star_sim; eauto. intros (fpS & spc' & Hstar & MS').
     eapply match_abort in MS'; eauto. destruct MS' as (spc'' & fpS' & Hstar' & Habort).
     eapply non_evt_star_star_step in Hstar. eapply tau_star_star_step in Hstar'.
@@ -218,7 +218,7 @@ Proof.
     eapply match_eventstep in MS'; eauto.
     destruct MS' as (spc'' & Hevt' & MS'').
     apply (Etr_cons glob_step _ _ _ fpS spc' _ spc''). auto. auto.
-    eapply tso_globusim_refinement; eauto.
+    eapply CIH; eauto.
     unfold DRF.star_race_config in *. intros (l & fp' & pc' & Hstar' & Hrace).
     apply Hdrf. apply non_evt_star_star_step in Hstar. destruct Hstar as [l' Hstar].
     do 3 eexists. split. eapply star_star_app. eauto. eapply star_step. eauto. eauto. eauto.

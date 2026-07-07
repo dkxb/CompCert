@@ -41,7 +41,7 @@ Proof.
   left; red; intros. destruct (zeq lo ofs). congruence. apply r. lia.
   right; red; intros. elim n. red; intros; apply H0; lia.
   right; red; intros. elim n. apply H0. lia.
-  left; red; intros. omegaContradiction.
+  left; red; intros. lia.
 Qed.
 Definition valid_access m chunk b ofs p:=
   range_perm m b ofs (ofs + size_chunk chunk) Memperm.Max p /\
@@ -53,7 +53,7 @@ Lemma valid_access_dec:
 Proof.
   intros.
   destruct (range_perm_dec m b ofs (ofs + size_chunk chunk) Memperm.Max p).
-  destruct (Zdivide_dec (align_chunk chunk) ofs (align_chunk_pos chunk)).
+  destruct (Zdivide_dec (align_chunk chunk) ofs).
   left; constructor; auto.
   right; red; intro V; inv V; contradiction.
   right; red; intro V; inv V; contradiction.

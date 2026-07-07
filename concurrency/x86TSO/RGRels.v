@@ -292,17 +292,19 @@ Proof.
   eapply H. eauto. eapply GMem.dom_forward. eapply GMem.forward_trans. exact H0. exact H1.
   eapply H_object_valid_block_fp in C1. destruct C1 as [C1|[ofs' C1]]; eapply obj_mem_valid; eauto.
 
-  apply H_client_valid_block_fp in C2; destruct C2 as [C2|[ofs'' C2]];
-    apply H_object_alloc_fp in C1; destruct C1 as [Hfresh [Hvalid [C1|C1]]].
+  apply H_client_valid_block_fp in C2; destruct C2 as [C2|[ofs'' C2]].
+  apply H_object_alloc_fp in C1 as [Hfresh [Hvalid Hall]].
+  destruct (Hall ofs) as [C1|C1].
   eapply obj_mem_client_mem_excluded; eauto.
   eapply unused_mem_client_mem_excluded. eapply valid_unused_mem_forward. eauto. eauto. eauto. auto.
+  apply H_object_alloc_fp in C1 as [Hfresh [Hvalid Hall]].
+  destruct (Hall ofs'') as [C1|C1].
   eapply obj_mem_client_mem_excluded; eauto.
   eapply unused_mem_client_mem_excluded. eapply valid_unused_mem_forward. eauto. eauto. eauto. auto.
 
   eapply H. eauto. eapply GMem.dom_forward. exact H1.
-  eapply H_object_alloc_fp in C1. destruct C1 as (Hfresh & Hvalid & [Hobj|Hunused]); auto.
-
-  Unshelve. eauto.
+  eapply H_object_alloc_fp in C1 as (Hfresh & Hvalid & Hall).
+  destruct (Hall ofs) as [Hobj|Hunused]; auto.
 Qed.
 
 Lemma client_mem_obj_mem_excluded:
@@ -336,9 +338,12 @@ Proof.
   rewrite <- Hobjeq in C2. eauto.
   
   apply H_client_alloc_fp in C1; apply H_object_valid_block_fp in C2.
-  destruct C2 as [C2|[ofs' C2]]; destruct C1 as [Hfresh [Hvalid [Hclient|Hunused]]].
+  destruct C1 as [Hfresh [Hvalid Hclient_all]].
+  destruct C2 as [C2|[ofs' C2]].
+  destruct (Hclient_all ofs) as [Hclient|Hunused].
   eapply obj_mem_client_mem_excluded. auto using GMem.forward_refl. eauto. eauto.
   eapply unused_mem_object_mem_excluded; eauto.
+  destruct (Hclient_all ofs') as [Hclient|Hunused].
   eapply obj_mem_client_mem_excluded. auto using GMem.forward_refl. eauto. eauto.
   eapply unused_mem_object_mem_excluded; eauto.
 

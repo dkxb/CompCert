@@ -1685,16 +1685,16 @@ Proof.
     exploit IHargs;eauto;simpl;intro.
     eapply LEffect_trans_union;eauto.
     unfold apply_buffer,optbind in H4,H6;ex_match;inv H4;inv H6.
-    apply apply_buffer_item_eff in Hx as ?.
-    apply apply_buffer_item_eff in Hx0 as ?.
+    apply apply_buffer_item_eff in Hx as Hx_eff.
+    apply apply_buffer_item_eff in Hx0 as Hx0_eff.
     rewrite FP.union_comm_eq.
     eapply LEffect_trans_union with(m2:=x0).
-    split;auto.
-    simpl in *. unfold store in Hx0;ex_match;inv Hx0.
+    split;[exact Hx_eff|].
+    simpl in *. unfold store in Hx;ex_match;inv Hx.
     unfold LocalAlloc,GMem.valid_block;simpl;intros;try contradiction.
 
-    split;auto.
-    simpl in *. unfold store in Hx;ex_match;inv Hx.
+    split;[exact Hx0_eff|].
+    simpl in *. unfold store in Hx0;ex_match;inv Hx0.
     unfold LocalAlloc,GMem.valid_block;simpl;intros;try contradiction.
   }
   {
