@@ -63,22 +63,25 @@ Local Notation internal_fn := ClightLang.internal_fn.
  *)
 
 (** [deref_loc] *)
-Inductive deref_loc_fp ty b ofs : footprint -> Prop :=
+Inductive deref_loc_fp ty b ofs : bitfield -> footprint -> Prop :=
 | deref_loc_value_fp : forall chunk fp,
     access_mode ty = By_value chunk ->
     loadv_fp chunk (Vptr b ofs) = fp ->
-    deref_loc_fp ty b ofs fp
+    deref_loc_fp ty b ofs Full fp
 | deref_loc_reference_fp : 
     access_mode ty = By_reference ->
-    deref_loc_fp ty b ofs empfp
+    deref_loc_fp ty b ofs Full empfp
 | deref_loc_copy_fp :
     access_mode ty = By_copy ->
-    deref_loc_fp ty b ofs empfp.
+    deref_loc_fp ty b ofs Full empfp
+| deref_loc_bitfield_fp : forall sz sg pos width,
+    deref_loc_fp ty b ofs (Bits sz sg pos width)
+                 (loadv_fp (chunk_for_carrier sz) (Vptr b ofs)).
 
 Lemma deref_loc_fp_exists:
-  forall ty m b ofs v,
-    deref_loc ty m b ofs v ->
-    exists fp, deref_loc_fp ty b ofs fp.
+  forall ty m b ofs bf v,
+    deref_loc ty m b ofs bf v ->
+    exists fp, deref_loc_fp ty b ofs bf fp.
 Proof.
   induction 1; eexists; econstructor; eauto; fail.
 Qed.
@@ -97,7 +100,7 @@ Inductive assign_loc_fp (ce:composite_env) ty b ofs : val -> footprint -> Prop :
       assign_loc_fp ce ty b ofs (Vptr b' ofs') fp.*)
 Lemma assign_loc_fp_exists:
   forall ce ty m b ofs v m',
-    assign_loc ce ty m b ofs v m' ->
+    assign_loc ce ty m b ofs Full v m' ->
     exists fp, assign_loc_fp ce ty b ofs v fp.
 Proof.
   induction 1.
@@ -217,11 +220,11 @@ Inductive eval_expr_fp: expr -> footprint -> Prop :=
     eval_expr_fp (Esizeof ty1 ty) empfp
 | eval_Ealignof_fp: forall ty1 ty,
     eval_expr_fp (Ealignof ty1 ty) empfp
-| eval_Elvalue_fp: forall a loc ofs fp1 v fp2 fp,
-    eval_lvalue a loc ofs ->
+| eval_Elvalue_fp: forall a loc ofs bf fp1 v fp2 fp,
+    eval_lvalue a loc ofs bf ->
     eval_lvalue_fp a fp1 ->
-    deref_loc (typeof a) m loc ofs v ->
-    deref_loc_fp (typeof a) loc ofs fp2 ->
+    deref_loc (typeof a) m loc ofs bf v ->
+    deref_loc_fp (typeof a) loc ofs bf fp2 ->
     FP.union fp1 fp2 = fp ->
     eval_expr_fp a fp
 
@@ -243,12 +246,12 @@ Combined Scheme eval_expr_lvalue_fp_ind from eval_expr_fp_ind2, eval_lvalue_fp_i
 
 Lemma eval_expr_lvalue_fp_exists:
   (forall a v, eval_expr a v -> exists fp, eval_expr_fp a fp)
-  /\ (forall a l ofs, eval_lvalue a l ofs -> exists fp, eval_lvalue_fp a fp).
+  /\ (forall a l ofs bf, eval_lvalue a l ofs bf -> exists fp, eval_lvalue_fp a fp).
 Proof.
   apply eval_expr_lvalue_ind; intros;
     repeat match goal with H: exists _,_|-_ => destruct H end;
     try match goal with
-        | [H: deref_loc _ _ _ _ _ |- _] => exploit deref_loc_fp_exists; eauto; intros [? ?]
+        | [H: deref_loc _ _ _ _ _ _ |- _] => exploit deref_loc_fp_exists; eauto; intros [? ?]
         end;
     try (eexists; econstructor; eauto; fail).
   exploit sem_unary_operation_sem_unary_operation_fp; eauto. intros [fp A].
@@ -264,7 +267,7 @@ Lemma eval_expr_fp_exists:
 Proof proj1 eval_expr_lvalue_fp_exists.
 
 Lemma eval_lvalue_fp_exists:
-  forall a l ofs, eval_lvalue a l ofs -> exists fp, eval_lvalue_fp a fp.
+  forall a l ofs bf, eval_lvalue a l ofs bf -> exists fp, eval_lvalue_fp a fp.
 Proof proj2 eval_expr_lvalue_fp_exists.
 
 (** [eval_exprlist ge e m al tyl vl] evaluates a list of r-value
@@ -312,10 +315,10 @@ Local Notation eval_exprlist := (Clight.eval_exprlist ge).
 
 Inductive step: core -> mem -> footprint -> core -> mem -> Prop :=
 | step_assign:   forall f a1 a2 k e le m loc ofs v2 v m' fp1 fp2 fp3 fp4 fp,
-    eval_lvalue e le m a1 loc ofs ->
+    eval_lvalue e le m a1 loc ofs Full ->
     eval_expr e le m a2 v2 ->
     sem_cast v2 (typeof a2) (typeof a1) m = Some v ->
-    assign_loc ge (typeof a1) m loc ofs v m' ->
+    assign_loc ge (typeof a1) m loc ofs Full v m' ->
     (* fp *)
     eval_lvalue_fp e le m a1 fp1 ->
     eval_expr_fp e le m a2 fp2 ->
@@ -663,14 +666,14 @@ Definition after_external (c: core) (rv: option val) : option core :=
     Core_Callstate fd vargs k =>
     match fd with
     | External (EF_external name sig) tps tp cc =>
-      match rv, sig_res sig with
+	      match rv, sig_res sig with
 	        Some v, Xvoid => None
 	      | Some v, ty =>
 	        if val_has_type_func v (proj_xtype ty) then  Some(Core_Returnstate v k)
-        else None
+	        else None
 	      | None, Xvoid  => Some(Core_Returnstate Vundef k)
 	      | None, _ => None
-      end
+	      end
     | _ => None
     end
   | _ => None
