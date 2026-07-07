@@ -79,7 +79,7 @@ Inductive core : Type :=
       (sp: val)                (**r stack pointer *)
       (pc: node)               (**r current program point *)
       (ls: locset)             (**r location state *)
-      (sigres: option typ),
+	      (sigres: xtype),
       core
 | Core_Block:
     forall (stack: list stackframe) (**r call stack *)
@@ -87,18 +87,18 @@ Inductive core : Type :=
       (sp: val)                (**r stack pointer *)
       (bb: bblock)             (**r current basic block *)
       (ls: locset)             (**r location state *)
-      (sigres: option typ),
+	      (sigres: xtype),
       core
 | Core_Callstate:
     forall (stack: list stackframe) (**r call stack *)
       (f: fundef)              (**r function to call *)
       (ls: locset)             (**r location state of caller *)
-      (sigres: option typ),
+	      (sigres: xtype),
       core
 | Core_Returnstate:
     forall (stack: list stackframe) (**r call stack *)
       (ls: locset)             (**r location state of callee *)
-      (sigres: option typ),
+	      (sigres: xtype),
       core.
 
 
@@ -224,7 +224,7 @@ Definition fundef_init (cfd: fundef) (args: list val) : option core :=
   match cfd with
   | External _ => None
   | Internal fd =>
-    let tyl := sig_args (funsig cfd) in
+	    let tyl := proj_sig_args (funsig cfd) in
     if wd_args args tyl 
     then Some (Core_Callstate nil cfd
                               (set_arguments
@@ -265,12 +265,13 @@ Definition after_external (c: core) (vret: option val) : option core :=
     | (EF_external name sig)
       => match vret, (sig_res sig) with
           (** following operational semantics of LTL, set registers in locset to return value *)
-          None, None => Some (Core_Returnstate s (Locmap.setpair (loc_result sig) Vundef ls) sigres)
-        | Some v, Some ty =>
-          if val_has_type_func v ty
+          None, Xvoid => Some (Core_Returnstate s (Locmap.setpair (loc_result sig) Vundef ls) sigres)
+        | Some v, Xvoid => None
+        | Some v, ty =>
+          if val_has_type_func v (proj_xtype ty)
           then Some (Core_Returnstate s (Locmap.setpair (loc_result sig) v ls) sigres)
           else None
-        | _, _ => None
+        | None, _ => None
         end
     | _ => None
     end
