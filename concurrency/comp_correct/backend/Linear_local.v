@@ -232,7 +232,7 @@ Definition fundef_init (cfd: fundef) (args: list val) : option core :=
   match cfd with
   | External _ => None
   | Internal fd =>
-    let tyl := sig_args (funsig cfd) in
+	    let tyl := proj_sig_args (funsig cfd) in
     if wd_args args tyl
     then
       let ls0 := set_arguments (loc_arguments (funsig cfd)) args (Locmap.init Vundef) in
@@ -269,12 +269,13 @@ Definition after_external (c: core) (vret: option val) : option core :=
     | (EF_external name sig)
       => match vret, (sig_res sig) with
           (** following operational semantics of LTL, set registers in locset to return value *)
-          None, None => Some (Core_Returnstate s (Locmap.setpair (loc_result sig) Vundef ls) lf)
-        | Some v, Some ty =>
-          if val_has_type_func v ty
+          None, Xvoid => Some (Core_Returnstate s (Locmap.setpair (loc_result sig) Vundef ls) lf)
+        | Some v, Xvoid => None
+        | Some v, ty =>
+          if val_has_type_func v (proj_xtype ty)
           then Some (Core_Returnstate s (Locmap.setpair (loc_result sig) v ls) lf)
           else None
-        | _, _ => None
+        | None, _ => None
         end
     | _ => None
     end

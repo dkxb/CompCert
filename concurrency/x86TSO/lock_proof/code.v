@@ -63,7 +63,7 @@ in submission #115 supplemental text.
 *)
 Definition lock_acquire_fnbody : SpecLang.function :=
   SpecLang.Build_function
-    (mksignature nil None (mkcallconv false false false))
+    (mksignature nil Xvoid cc_default)
     (
       Sseq
       (Sseq (Sassign r Int.zero)
@@ -88,7 +88,7 @@ in submission #115 supplemental text.
 *)
 Definition lock_release_fnbody : SpecLang.function :=
   SpecLang.Build_function
-    (mksignature nil None (mkcallconv false false false))
+    (mksignature nil Xvoid cc_default)
     (
       Sseq 
       (Satom
@@ -142,7 +142,7 @@ in submission #115 supplemental text.
 *)
 Definition lock_acquire_tso_fnbody : function :=
   mkfunction
-    (mksignature nil None (mkcallconv false false false))
+    (mksignature nil Xvoid cc_default)
     (
       Plabel lock_lbl 
              :: Pmov_rs RCX lock_L_ident
@@ -176,7 +176,7 @@ in submission #115 supplemental text
 *)
 Definition lock_release_tso_fnbody : function :=
    mkfunction
-     (mksignature nil None (mkcallconv false false false))
+     (mksignature nil Xvoid cc_default)
      (
        Plabel unlock_lbl
               :: Pmov_rs RCX lock_L_ident

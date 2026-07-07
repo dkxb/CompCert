@@ -460,9 +460,10 @@ Definition init_mem : genv -> mem -> Prop := init_mem_generic.
 
 (** Copied from compcomp *)
 Definition fundef_init (fb: block) (sig: signature) (args: list val) : option core :=
-  let tyl := sig_args sig in
+  let tyl := proj_sig_args sig in
   if wd_args args tyl 
-  then Some (Core_CallstateIn fb args tyl (sig_res sig))
+  then Some (Core_CallstateIn fb args tyl
+                              (match sig_res sig with Xvoid => None | x => Some (proj_xtype x) end))
   else None.
 
 
@@ -500,9 +501,9 @@ Definition after_external (c: core) (vret: option val) : option core :=
     Core_CallstateOut s fb (EF_external name sig) args rs lf =>
     match vret, (sig_res sig) with
       (** following operational semantics of LTL, set registers in locset to return value *)
-      None, None => Some (Core_Returnstate s (set_pair (loc_result sig) Vundef rs) lf)
-    | Some v, Some ty =>
-      if val_has_type_func v ty
+      None, Xvoid => Some (Core_Returnstate s (set_pair (loc_result sig) Vundef rs) lf)
+    | Some v, ty =>
+      if val_has_type_func v (proj_xtype ty)
       then Some (Core_Returnstate s (set_pair (loc_result sig) v rs) lf)
       else None
     | _, _ => None
@@ -514,7 +515,7 @@ Definition after_external (c: core) (vret: option val) : option core :=
 Definition halted (c : core): option val :=
   match c with
   | Core_Returnstate nil rs (mk_load_frame _ _ _ sigres) =>
-    Some (match (loc_result (mksignature nil sigres cc_default)) with
+    Some (match (loc_result (mksignature nil (match sigres with None => Xvoid | Some ty => inj_type ty end) cc_default)) with
           | One r => rs r
           | Twolong r1 r2 => Val.longofwords (rs r1) (rs r2)
           end)

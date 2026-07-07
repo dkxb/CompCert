@@ -251,12 +251,13 @@ Definition after_external (c: core) (vret: option val) : option core :=
     match ef with
     | (EF_external _ sg)
       => match vret, sig_res sg with
-          None, None => Some (Core_Returnstate s Vundef)
-        | Some v, Some ty =>
-          if val_has_type_func v ty
+          None, Xvoid => Some (Core_Returnstate s Vundef)
+        | Some v, Xvoid => None
+        | Some v, ty =>
+          if val_has_type_func v (proj_xtype ty)
           then Some (Core_Returnstate s v)
           else None
-        | _, _ => None
+        | None, _ => None
         end
     | _ => None
     end
@@ -274,7 +275,7 @@ Definition halted (c : core): option val :=
 Definition fundef_init (cfd: fundef) (args: list val) : option core :=
   match cfd with
   | Internal fd =>
-    let tyl := sig_args (funsig cfd) in
+	    let tyl := proj_sig_args (funsig cfd) in
     if wd_args args tyl
     then Some (Core_Callstate nil cfd args)
     else None

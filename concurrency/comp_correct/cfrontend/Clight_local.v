@@ -273,9 +273,9 @@ Proof proj2 eval_expr_lvalue_fp_exists.
   evaluate the arguments of function calls. *)
 
 Local Notation eval_exprlist := (Clight.eval_exprlist ge e le m).
-Inductive eval_exprlist_fp : list expr -> typelist -> footprint -> Prop :=
+Inductive eval_exprlist_fp : list expr -> list type -> footprint -> Prop :=
 | eval_fp_Enil:
-    eval_exprlist_fp nil Tnil empfp
+    eval_exprlist_fp nil nil empfp
 | eval_fp_Econs: forall a bl ty tyl v1 fp1 v2 fp2 fp3 fp,
     eval_expr a v1 ->
     eval_expr_fp a fp1 ->
@@ -283,7 +283,7 @@ Inductive eval_exprlist_fp : list expr -> typelist -> footprint -> Prop :=
     sem_cast_fp v1 (typeof a) ty m = Some fp2 ->
     eval_exprlist_fp bl tyl fp3 ->
     FP.union (FP.union fp1 fp2) fp3 = fp ->
-    eval_exprlist_fp (a :: bl) (Tcons ty tyl) fp.
+    eval_exprlist_fp (a :: bl) (ty :: tyl) fp.
               
 Lemma eval_exprlist_fp_exists:
   forall bl tyl vl,
@@ -664,11 +664,12 @@ Definition after_external (c: core) (rv: option val) : option core :=
     match fd with
     | External (EF_external name sig) tps tp cc =>
       match rv, sig_res sig with
-        Some v, Some ty =>
-        if val_has_type_func v ty then  Some(Core_Returnstate v k)
+	        Some v, Xvoid => None
+	      | Some v, ty =>
+	        if val_has_type_func v (proj_xtype ty) then  Some(Core_Returnstate v k)
         else None
-      | None, None  => Some(Core_Returnstate Vundef k)
-      | _,_ => None
+	      | None, Xvoid  => Some(Core_Returnstate Vundef k)
+	      | None, _ => None
       end
     | _ => None
     end
