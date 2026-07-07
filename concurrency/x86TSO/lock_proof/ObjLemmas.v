@@ -217,7 +217,7 @@ Proof.
   destruct (Genv.find_funct_ptr tge b) eqn:Hfptr; try discriminate.
   destruct f; try discriminate.
   inversion Hinit_genv.   
-  revert H2 H3 H4 H5 Hfind_symbol Hfptr Hinit_core H1.
+  revert id H2 H3 H4 H5 Hfind_symbol Hfptr Hinit_core H1.
   clear. 
   intros.
   specialize (H2 id).
@@ -227,21 +227,24 @@ Proof.
   simpl in H.
   destruct id; try simpl in H; 
   try destruct id; try simpl in H; try discriminate.
-  destruct id; try simpl in H; try discriminate.
-  destruct id; try simpl in H; try discriminate. 
   eapply H5 in H7. 
   inversion H; subst.
   rewrite Hfind_symbol in H6.
   inversion H6; subst.
   simpl in H7.
-  eapply genv_defs_fun_find_fun_eq in Hfptr; eauto.
+  symmetry in H7.
+  assert (Hdef: (Genv.genv_defs tge) ! b =
+                Some (Gfun (Internal lock_release_tso_fnbody))) by exact H7.
+  eapply genv_defs_fun_find_fun_eq in Hfptr; [|exact Hdef].
   inversion Hfptr; subst.
   clear - Hinit_core.
   unfolds fundef_init.
   simpls.
   unfolds wd_args.
-  destruct (val_has_type_list_func args nil && vals_defined args &&
-                   zlt (4 * (2 * Zlength args)) Int.max_unsigned) eqn : Hargs.
+  match type of Hinit_core with
+  | (if ?b then _ else _) = Some _ =>
+      destruct b eqn:Hargs; [|discriminate]
+  end.
   symmetry in Hargs.
   eapply andb_true_eq in Hargs.
   destruct Hargs as [Hargs1 Hargs2].
@@ -250,25 +253,23 @@ Proof.
   destruct args.
   eauto.
   simpl in Hargs.
-  discriminate.
-  discriminate.
-  rewrite PTree.gleaf in H.
-  discriminate.
-  rewrite PTree.gleaf in H.
-  discriminate.
+  discriminate Hargs.
   eapply H5 in H7.
   inversion H; subst.
   simpl in H7.
   rewrite Hfind_symbol in H6.
   inversion H6; subst.
-  eapply genv_defs_fun_find_fun_eq in Hfptr; eauto.
+  symmetry in H7.
+  eapply genv_defs_fun_find_fun_eq in Hfptr; [|exact H7].
   inversion Hfptr; subst.
   clear - Hinit_core.
   unfolds fundef_init.
   simpls.
   unfolds wd_args.
-  destruct (val_has_type_list_func args nil && vals_defined args &&
-                   zlt (4 * (2 * Zlength args)) Int.max_unsigned) eqn : Hargs.
+  match type of Hinit_core with
+  | (if ?b then _ else _) = Some _ =>
+      destruct b eqn:Hargs; [|discriminate]
+  end.
   symmetry in Hargs.
   eapply andb_true_eq in Hargs.
   destruct Hargs as [Hargs1 Hargs2].
@@ -277,7 +278,6 @@ Proof.
   destruct args.
   eauto. 
   simpl in Hargs.
-  discriminate.
   discriminate.
   eapply H5 in H7.
   inversion H; subst.
@@ -313,7 +313,7 @@ Proof.
   destruct f; try discriminate.
   inversion Hinit_genv.
   inversion H0. 
-  revert H3 H4 H5 H6 H7 Hfind_symbol Hfptr Hinit_core H2.
+  revert id H3 H4 H5 H6 H7 Hfind_symbol Hfptr Hinit_core H2.
   clear. 
   intros.
   specialize (H4 id).
@@ -323,8 +323,6 @@ Proof.
   simpl in H.
   destruct id; try simpl in H; 
   try destruct id; try simpl in H; try discriminate.
-  destruct id; try simpl in H; try discriminate.
-  destruct id; try simpl in H; try discriminate.
   split; eauto.
   eapply H7 in H8.  
   inversion H; subst.
@@ -339,8 +337,6 @@ Proof.
   simpls.
   destruct args; tryfalse.
   eauto.
-  destruct id; simpls; tryfalse.
-  destruct id; simpls; tryfalse.
   inversion H; subst.
   unfolds SpecLang.F, SpecLang.V.
   rewrite <- H1 in Hinit_core.
@@ -835,6 +831,3 @@ Proof.
     eapply unlock_footprint_case; eauto.
   }
 Qed.
-  
-    
-    

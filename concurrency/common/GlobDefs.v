@@ -81,23 +81,15 @@ Module FLists.
     forall m n,
       ((m + n + 2) * (m + n + 1) / 2  > n)%nat .
   Proof.
-    induction m.
-    (* m = 0 *)
-    intro. rewrite Nat.add_0_l.
-    induction n. simpl. lia.
-    do 2 rewrite plus_Snm_nSm. rewrite mult_comm.
-    replace 3%nat with (1 + 2)%nat by lia.
-    rewrite plus_assoc. rewrite Nat.mul_add_distr_l.
-    rewrite Nat.div_add; lia.
-    (* induction on m *)
-    intro.
-    rewrite plus_Snm_nSm. rewrite <- Nat.add_assoc.
-    rewrite plus_Snm_nSm. rewrite <- Nat.add_assoc. rewrite plus_Snm_nSm.
-    do 2 rewrite Nat.add_assoc.
-    replace 3%nat with (1 + 2)%nat by lia.
-    rewrite plus_assoc. rewrite Nat.mul_add_distr_r.
-    rewrite mult_comm. rewrite plus_comm. rewrite mult_comm. rewrite plus_comm.
-    rewrite Nat.div_add; lia.
+    intros m n.
+    apply Nat.lt_le_trans with (n + 1)%nat.
+    - apply Nat.lt_add_pos_r. apply Nat.lt_0_succ.
+    - apply Nat.div_le_lower_bound. auto.
+      apply Nat.le_trans with ((n + 2) * (n + 1))%nat.
+      + apply Nat.mul_le_mono_r. apply (Nat.le_add_l 2 n).
+      + apply Nat.mul_le_mono.
+        * rewrite <- Nat.add_assoc. apply Nat.le_add_l.
+        * rewrite <- Nat.add_assoc. apply Nat.le_add_l.
   Qed.
 
   Lemma div2_plus_1:
@@ -109,24 +101,20 @@ Module FLists.
     replace ((x - 2 * y) / 2 - 1)%nat with ((x - 2 * y - 2)/2)%nat.
     replace (2 * S y)%nat with (2 * (y + 1))%nat by lia.
     rewrite Nat.mul_add_distr_l. rewrite Nat.mul_1_r, Nat.sub_add_distr. auto.
-    assert (forall x, (x / 2 - 1 = (x - 2) / 2)%nat).
-    { clear. intro.
-      induction x. simpl. auto.
-      destruct x. simpl. lia.
-      destruct x. simpl. lia.
-      replace (S (S (S x)) - 2)%nat with (S x) by lia.
-      replace (S (S x) - 2)%nat with x in IHx by lia.
-      destruct (Even.even_or_odd x).
-      (* even *)
-      assert (Even.even (S (S x))) by (apply Even.even_S, Even.odd_S; auto).
-      do 2 rewrite <- Nat.div2_div.
-      rewrite <- Div2.even_div2; auto. rewrite Nat.div2_div. rewrite IHx.
-      rewrite <- Div2.even_div2; auto. symmetry. apply Nat.div2_div.
-      (* odd *)
-      assert (Even.odd (S (S x))) by (apply Even.odd_S, Even.even_S; auto).
-      do 2 rewrite <- Nat.div2_div.
-      rewrite <- (Div2.odd_div2 x); auto.
-      rewrite <- Div2.odd_div2; auto.
+    assert (forall z:nat, (z / 2 - 1 = (z - 2) / 2)%nat).
+    { clear. intro z.
+      destruct z as [|[|z]].
+      - auto.
+      - auto.
+      - assert (Heq1 : (S (S z) - 2)%nat = z).
+        { simpl. rewrite Nat.sub_0_r. auto. }
+        assert (Heq2 : (S (S z) / 2 = z / 2 + 1)%nat).
+        { rewrite <- Nat.div2_div.
+          assert (Hdiv : Nat.div2 (S (S z)) = S (Nat.div2 z)) by (simpl; auto).
+          rewrite Hdiv, Nat.div2_div.
+          symmetry. apply Nat.add_1_r. }
+        rewrite Heq1, Heq2.
+        rewrite Nat.add_sub. auto.
     }
     rewrite H. auto.
   Qed.
@@ -606,7 +594,7 @@ Module ThreadPool.
       let: f := FLists.get_tfid (GlobEnv.freelists ge) (thdp.(next_tid)) nf in
       let: c := Core.Build_t mid c sg f in
       Build_t (PMap.set thdp.(next_tid) (Some (c::nil)) thdp.(content))
-              (Psucc thdp.(next_tid))
+              (Pos.succ thdp.(next_tid))
               (fun i => if peq i thdp.(next_tid) then (S (thdp.(next_fmap) i))
                         else thdp.(next_fmap) i).
 
@@ -799,9 +787,9 @@ Module ThreadPool.
     Record inv (thdp: t) : Prop :=
       {
         tp_finite: forall i,
-            Pge i thdp.(next_tid) -> PMap.get i thdp.(content) = None;
+          (thdp.(next_tid) <= i)%positive -> PMap.get i thdp.(content) = None;
         tp_valid: forall i,
-            Plt i thdp.(next_tid) -> exists cs, PMap.get i thdp.(content) = Some cs;
+          (i < thdp.(next_tid))%positive -> exists cs, PMap.get i thdp.(content) = Some cs;
         (* default val is none *)
         thdp_default: fst thdp.(content) = None;
         (* inv on callstacks and freelists hold *)
@@ -813,8 +801,7 @@ Module ThreadPool.
     Lemma emp_inv: inv emp.
     Proof.
       unfold emp. constructor; intros; simpl in *; auto.
-      apply PMap.gi.
-      simpl in H. induction i; inversion H.
+      induction i; inversion H.
       rewrite PMap.gi in H. discriminate.
     Qed.
 
@@ -1064,8 +1051,8 @@ Definition res_has_type (res: val) (sg: signature) : Prop :=
 
 Definition res_sg (sg: signature) (res: val) : option val :=
   match (sg.(sig_res)) with
-  | None => None
-  | Some _ => Some res
+  | Xvoid => None
+  | _ => Some res
   end.
 
 Definition not_pointer (v: val) : Prop :=

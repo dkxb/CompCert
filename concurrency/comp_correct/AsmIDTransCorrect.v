@@ -1097,7 +1097,7 @@ Proof.
     destruct (Genv.find_symbol ge id); try discriminate.
     destruct (Genv.find_funct_ptr ge b); try discriminate.
     destruct f; try discriminate.
-    destruct (wd_args argSrc (sig_args (fn_sig f))) eqn:WDARG; try discriminate.
+    destruct (wd_args argSrc (proj_sig_args (fn_sig f))) eqn:WDARG; try discriminate.
     erewrite wd_args_inject; eauto. inversion H3. clear H3. subst score.
     eexists. split. eauto. intros sm tm INITSM INITTM MEMREL sm' tm' HLRELY.
     exists 0%nat. 
