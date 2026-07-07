@@ -8,14 +8,20 @@ Proof.
   unfold lang_det,step_det,corestep_locality_1,corestep_locality_2;intros.
   destruct H_step as (fp1&q1&m1&stepa).
 
-  specialize (H1 _ _ _ stepa) as ?.
-  eapply LPre_subset in H2 as ?;eauto.
-  eapply H0 in H5 as ?;eauto.
+  (* following is vibe-proved *)
 
-  destruct H6 as [?[]].
-  eapply H in H6 as [?[]];try apply H3;subst.
-
-  eapply H0 in H3;eauto. apply LPre_comm;eauto.
+  (* fp1 is captured by fp0 *)
+  specialize (H1 _ _ _ stepa) as Hsub.
+  (* hence m and m0 also agree on fp1 *)
+  eapply LPre_subset in H2 as Hpre1;eauto.
+  (* locality_1: the m-step [stepa] can be replayed from m0 with same fp1,q1 *)
+  eapply H0 in stepa as Hex;eauto.
+  destruct Hex as (m0'' & S0 & Hpost).
+  (* determinism: S0 (from m0, fp1/q1) and H3 (from m0, fp/q') coincide *)
+  eapply H in S0 as (Efp & Eq & Em);[|exact H3].
+  subst.
+  (* now [stepa] itself is the required m-step with fp/q' *)
+  eexists. eassumption.
 Qed.
 Lemma GMem_eq_unchanged_on:
   forall m m' locs,

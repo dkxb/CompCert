@@ -4271,7 +4271,7 @@ Proof.
     }
   }
   {
-    eapply H with (t0 := t) in H2.
+	    eapply (H t0 bi0 b m') in H2.
     2 : eauto.
     4 : eauto.
     rewrite tupdate_not_eq_get in H2; eauto.
@@ -4874,7 +4874,7 @@ Section normal_reorder.
   Record inv (thdp: TSOThrdPool.t) : Prop :=
     {
       tp_finite: forall i,
-        Pge i thdp.(TSOThrdPool.next_tid) -> PMap.get i thdp.(TSOThrdPool.content) = None;
+        (thdp.(TSOThrdPool.next_tid) <= i)%positive -> PMap.get i thdp.(TSOThrdPool.content) = None;
       tp_valid: forall i,
           Plt i thdp.(TSOThrdPool.next_tid) -> exists cs, PMap.get i thdp.(TSOThrdPool.content) = Some cs;
       (* default val is none *)
@@ -5099,8 +5099,9 @@ Section normal_reorder.
       inv H0.
       unfold TSOThrdPool.valid_tid.
       destruct (plt t (TSOThrdPool.next_tid thdp));auto.
-      apply tp_finite0 in n. rewrite n in H;inv H.
-    }
+      assert (Ple (TSOThrdPool.next_tid thdp) t) by extlia.
+      apply tp_finite0 in H0. rewrite H0 in H;inv H.
+	  }
     {
       intro.
       inv H1. rewrite H in H2. inv H2.
@@ -5123,7 +5124,11 @@ Section normal_reorder.
       i <> j ->
       Maps.PTree.set i v1 (Maps.PTree.set j v2 m) =
       Maps.PTree.set j v2 (Maps.PTree.set i v1 m).
-  Proof. induction i;intros;destruct m,j;simpl;auto;try (rewrite IHi;auto;intro;subst);contradiction. Qed.
+  Proof.
+    intros. apply PTree.extensionality. intro k.
+    repeat rewrite PTree.gsspec.
+    destruct (peq k i); destruct (peq k j); subst; try congruence; auto.
+  Qed.
   Lemma pmap_set_sym:
     forall (A : Type) (i j : positive) (m : PMap.t A) (v1 v2 : A),
       i <> j -> PMap.set i v1 (PMap.set j v2 m) = PMap.set j v2 (PMap.set i v1 m).
@@ -6503,7 +6508,7 @@ Proof.
             apply nfconflict_comm.
             eapply H11;eauto.
 
-            eapply H2 with(t0:=t').
+	            eapply (H2 t' bi').
             rewrite tupdate_comm,tupdate_b_get;auto.
             eauto.
             rewrite tupdate_b_get;auto.
