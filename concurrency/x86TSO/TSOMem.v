@@ -71,7 +71,7 @@ Inductive buffer_item : Type :=
 
 Definition loadbytes (m : gmem) (b : block) (ofs n : Z) :=
   if range_perm_dec m b ofs (ofs + n) Memperm.Max Memperm.Readable then
-    Some (Mem.getN (nat_of_Z n) ofs (GMem.mem_contents m) !! b)
+    Some (Mem.getN (Z.to_nat n) ofs (GMem.mem_contents m) !! b)
   else
     None.
 

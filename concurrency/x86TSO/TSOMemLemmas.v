@@ -1033,7 +1033,7 @@ Proof.
   unfold GMem.mem_contents.
   rewrite PMap.gss.
   unfold size_chunk_nat.
-  simpl nat_of_Z.
+  simpl Z.to_nat.
   assert (Pos.to_nat 4 =
           Datatypes.length (inj_bytes (encode_int 4 (Int.unsigned n)))).
   {
