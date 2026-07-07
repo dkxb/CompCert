@@ -190,10 +190,11 @@ Proof.
          | H: context[match ?x with _ => _ end] |- _ =>
            destruct x eqn:?; inv H; auto
            end; fail).
-  unfold cmpu_bool_fp in H. rewrite negb_false_iff in SF. rewrite SF in H. destruct v, v0; inv H; auto.
-  unfold cmpu_bool_fp in H. rewrite negb_false_iff in SF. rewrite SF in H. destruct v; inv H; auto.
-  unfold cmplu_bool_fp in H. rewrite SF in H. simpl in H. destruct v, v0; inv H; auto.
-  unfold cmplu_bool_fp in H. rewrite SF in H. simpl in H. destruct v; inv H; auto.  
+  all: simpl in SF; rewrite ?negb_false_iff in SF; try discriminate.
+  all: match goal with Hfp: cmplu_bool_fp _ _ ?v1 ?v2 = Some _ |- _ =>
+       unfold cmplu_bool_fp in Hfp;
+       destruct v1, v2; inv Hfp; auto
+       end.
 Qed.
 
 Lemma op_depends_on_memory_footprint_correct:
