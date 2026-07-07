@@ -24,11 +24,12 @@ Proof.
   intros. split; intros.
   unfold dom. rewrite <- (Pos2Nat.id b). apply in_map. auto.
   apply in_seq. pose proof (Pos2Nat.is_pos b); pose proof (Pos2Nat.is_pos B).
-  rewrite Nat.add_sub_assoc, minus_plus; try split; try lia. apply Pos2Nat.inj_lt; auto.
+  split; [lia | apply Pos2Nat.inj_lt in H; lia].
   unfold dom in H. apply in_map_iff in H. destruct H as [x [Hb IN]].
-  apply in_seq in IN. pose proof (Pos2Nat.is_pos B). rewrite Nat.add_sub_assoc, minus_plus in IN; try lia.
-  assert (Pos.to_nat b = x). rewrite <- Hb. apply Nat2Pos.id. lia. rewrite <- H0 in IN. destruct IN as [_ IN].
-  destruct (plt b B); auto. apply Pos2Nat.inj_lt in IN. congruence.
+  apply in_seq in IN. pose proof (Pos2Nat.is_pos B).
+  assert (Pos.to_nat b = x). { rewrite <- Hb. apply Nat2Pos.id. lia. }
+  rewrite <- H0 in IN. destruct IN as [_ IN].
+  destruct (plt b B); auto. exfalso; apply n; apply Pos2Nat.inj_lt; lia.
 Qed.
 
 Lemma incl_length_lt:

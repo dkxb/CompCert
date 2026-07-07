@@ -691,9 +691,14 @@ Proof.
     split;econstructor;eauto.
   }
   {
-    inv H5;solv_det.
-    eapply H1 in H13 as [];eauto.
-    split;econstructor;eauto.
+    inv H5; inv H6; solv_det.
+    match goal with
+    | Hfp: eval_expr_fp ge e le m a0 _ |- _ =>
+        eapply H1 in Hfp as []; eauto
+    end.
+    split.
+    - eapply eval_Efield_union; eauto.
+    - econstructor; eauto.
   }
 Qed.  
 

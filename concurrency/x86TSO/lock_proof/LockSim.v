@@ -26,7 +26,7 @@ Proof.
   unfold Genv.find_symbol,Genv.globalenv in *.
   simpl in *.
   ex_match2;simpl in *;subst;try discriminate.
-  1-3:Esimpl;eauto;unfold Genv.find_funct_ptr,Genv.find_funct,Genv.find_def;
+  all:Esimpl;eauto;unfold Genv.find_funct_ptr,Genv.find_funct,Genv.find_def;
     rewrite<- H10; simpl; auto.
 Qed.
 

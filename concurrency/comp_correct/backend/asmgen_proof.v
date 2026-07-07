@@ -79,6 +79,13 @@ Proof.
   simpl. apply sig_preserved'; auto.
 Qed.
 
+Lemma transf_function_no_overflow:
+  forall f tf,
+  transf_function f = OK tf -> list_length_z (fn_code tf) <= Ptrofs.max_unsigned.
+Proof.
+  intros. monadInv H. destruct (zlt Ptrofs.max_unsigned (list_length_z (fn_code x))); monadInv EQ0.
+  lia.
+Qed.
 
 Section PRESERVATION.
 
@@ -157,14 +164,6 @@ Proof.
 Qed.
 
 (** * Properties of control flow *)
-
-Lemma transf_function_no_overflow:
-  forall f tf,
-  transf_function f = OK tf -> list_length_z (fn_code tf) <= Ptrofs.max_unsigned.
-Proof.
-  intros. monadInv H. destruct (zlt Ptrofs.max_unsigned (list_length_z (fn_code x))); monadInv EQ0.
-  lia.
-Qed.
 
 Lemma exec_straight_exec:
   forall fb f c ep tf tc c' rs lf m fp rs' m',
@@ -420,22 +419,6 @@ Proof.
   auto. lia.
   generalize (transf_function_no_overflow _ _ H0). lia.
   intros. apply Pregmap.gso; auto.
-Qed.
-
-(** Existence of return addresses *)
-
-Lemma return_address_exists:
-  forall f sg ros c, is_tail (Mcall sg ros :: c) f.(Mach.fn_code) ->
-  exists ra, return_address_offset f c ra.
-Proof.
-  intros. eapply asmgen_proof0.return_address_exists; eauto.
-- intros. exploit transl_instr_label; eauto.
-  destruct i; try (intros [A B]; apply A). intros. subst c0. repeat constructor.
-- intros. monadInv H0.
-  destruct (zlt Ptrofs.max_unsigned (list_length_z (fn_code x))); inv EQ0.
-  monadInv EQ. rewrite transl_code'_transl_code in EQ0.
-  exists x; exists true; split; auto. unfold fn_code. repeat constructor.
-- exact transf_function_no_overflow.
 Qed.
 
 (** * Proof of semantic preservation *)
@@ -745,7 +728,7 @@ Proof.
     assert (exists tfd, tf = Internal tfd)  as [tfd INTERNAL] by (monadInv TRANSL; eauto). subst tf.
     unfold Mach_local.fundef_init, fundef_init in *.
     erewrite sig_preserved';[|monadInv TRANSL; eauto].
-    destruct (wd_args args (sig_args (Mach.funsig (Internal f)))) eqn: WDARGS; [|discriminate].
+    destruct (wd_args args (proj_sig_args (Mach.funsig (Internal f)))) eqn: WDARGS; [|discriminate].
     erewrite wd_args_inject; eauto.
     eexists. split. eauto.
     intros sm0 tm0 INITSM INITTM MEMINITINJ sm tm [HRELY LRELY MINJ].
@@ -1090,7 +1073,7 @@ Proof.
       generalize EQ; intros EQ'. monadInv EQ'.
       destruct (zlt Ptrofs.max_unsigned (list_length_z (fn_code x0))); inv EQ1.
       monadInv EQ0. rewrite transl_code'_transl_code in EQ1.*)
-      exploit Mem.alloc_extends. eauto. eauto. apply Zle_refl. apply Zle_refl.
+      exploit Mem.alloc_extends. eauto. eauto. apply Z.le_refl. apply Z.le_refl.
       intros [m1' [C D]].
 
       exploit store_args_extends. exact D. exact H2. intros [Lm' [STOREARGS' EXTENDS']].
@@ -1499,7 +1482,7 @@ Proof.
       destruct (zlt Ptrofs.max_unsigned (list_length_z (fn_code x0))); inv EQ1.
       monadInv EQ0. rewrite transl_code'_transl_code in EQ1.
       unfold store_stack, Mach.store_stack in *.
-      exploit Mem.alloc_extends. eauto. eauto. apply Zle_refl. apply Zle_refl.
+      exploit Mem.alloc_extends. eauto. eauto. apply Z.le_refl. apply Z.le_refl.
       intros [m1' [C D]].
       exploit Mem.storev_extends. eexact D. eexact H2. eauto. eauto.
       intros [m2' [F G]].
@@ -1625,8 +1608,11 @@ Proof.
             | Some v => (Core_Returnstate stack (Mach.set_pair (loc_result sg) v rs) (mk_load_frame sp0 args0 tyl0 sigres0))
             | None => (Core_Returnstate stack (Mach.set_pair (loc_result sg) Vundef rs) (mk_load_frame sp0 args0 tyl0 sigres0))
             end).
-    { destruct oresSrc; destruct (sig_res sg); inv AFTEXT; auto.
-      destruct val_has_type_func; inv H0; auto. }
+    { destruct oresSrc; destruct (sig_res sg); simpl in AFTEXT; try discriminate;
+        repeat match type of AFTEXT with
+               | context[if ?b then _ else _] => destruct b eqn:?
+               end;
+        inv AFTEXT; auto. }
     exists (match oresTgt with
        | Some v => Core_State (set_pair (loc_external_result sg) v rs0) #PC <- (rs0 RA)
                              (ASM_local.mk_load_frame sp0 sigres0)
@@ -1634,8 +1620,12 @@ Proof.
                            (ASM_local.mk_load_frame sp0 sigres0)
        end).
     split.
-    destruct oresSrc eqn:RES, oresTgt eqn:RES', (sig_res sg) eqn:SG; try discriminate; try contradiction; auto.
-    destruct v,t; inv ORESREL; try discriminate; try contradiction; simpl in *; eauto.
+    { destruct oresSrc eqn:RES, oresTgt eqn:RES', (sig_res sg) eqn:SG;
+        simpl in *; try discriminate; try contradiction; auto;
+        repeat match goal with
+               | |- context[if ?b then _ else _] => destruct b eqn:?; try discriminate; auto
+               end;
+        destruct v; inv ORESREL; try discriminate; try contradiction; simpl in *; eauto. }
 
     intros. exists 1%nat.
     assert (Mem.extends Hm' Lm').
@@ -1684,6 +1674,22 @@ Qed.
 
 End PRESERVATION.
 
+
+(** Existence of return addresses *)
+
+Lemma return_address_exists:
+  forall f sg ros c, is_tail (Mcall sg ros :: c) f.(Mach.fn_code) ->
+  exists ra, return_address_offset f c ra.
+Proof.
+  intros. eapply asmgen_proof0.return_address_exists; eauto.
+- intros. exploit transl_instr_label; eauto.
+  destruct i; try (intros [A B]; apply A). intros. subst c0. repeat constructor.
+- intros. monadInv H0.
+  destruct (zlt Ptrofs.max_unsigned (list_length_z (fn_code x))); inv EQ0.
+  monadInv EQ. rewrite transl_code'_transl_code in EQ0.
+  exists x; exists true; split; auto. unfold fn_code. repeat constructor.
+- apply transf_function_no_overflow.
+Qed.
 
 Theorem transf_local_ldsim:
   forall scu tcu,
