@@ -37,10 +37,10 @@ Proof.
   induction lo using (well_founded_induction_type (Zwf_up_well_founded hi)).
   destruct (zlt lo hi).
   destruct (perm_dec m b lo k p).
-  destruct (H (lo + 1)). red. omega.
-  left; red; intros. destruct (zeq lo ofs). congruence. apply r. omega.
-  right; red; intros. elim n. red; intros; apply H0; omega.
-  right; red; intros. elim n. apply H0. omega.
+  destruct (H (lo + 1)). red. lia.
+  left; red; intros. destruct (zeq lo ofs). congruence. apply r. lia.
+  right; red; intros. elim n. red; intros; apply H0; lia.
+  right; red; intros. elim n. apply H0. lia.
   left; red; intros. omegaContradiction.
 Qed.
 Definition valid_access m chunk b ofs p:=

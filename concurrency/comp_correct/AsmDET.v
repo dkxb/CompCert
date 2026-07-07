@@ -48,9 +48,9 @@ Proof.
   assert (nextblockid = nextblockid0).
   { generalize valid_wd valid_wd0. clear. intros.
     destruct (Nat.lt_total nextblockid nextblockid0).
-    eapply valid_wd0 in H; eauto. eapply valid_wd in H; eauto. omega.
+    eapply valid_wd0 in H; eauto. eapply valid_wd in H; eauto. lia.
     destruct H. auto.
-    eapply valid_wd in H; eauto. eapply valid_wd0 in H; eauto. omega.
+    eapply valid_wd in H; eauto. eapply valid_wd0 in H; eauto. lia.
   }
   subst. f_equal; apply Axioms.proof_irr.
 Qed.

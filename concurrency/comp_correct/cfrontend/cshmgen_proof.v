@@ -1010,12 +1010,12 @@ Proof.
   destruct (zlt 0 sz); try discriminate.
   destruct (zle sz Ptrofs.max_signed); simpl in SEM; inv SEM.
   assert (E1: Ptrofs.signed (Ptrofs.repr sz) = sz).
-  { apply Ptrofs.signed_repr. generalize Ptrofs.min_signed_neg; omega. }
+  { apply Ptrofs.signed_repr. generalize Ptrofs.min_signed_neg; lia. }
   destruct Archi.ptr64 eqn:SF; inversion EQ0; clear EQ0; subst c.
 + assert (E: Int64.signed (Int64.repr sz) = sz).
   { apply Int64.signed_repr.
     replace Int64.max_signed with Ptrofs.max_signed.
-    generalize Int64.min_signed_neg; omega.
+    generalize Int64.min_signed_neg; lia.
     unfold Ptrofs.max_signed, Ptrofs.half_modulus; rewrite Ptrofs.modulus_eq64 by auto. reflexivity. }
   econstructor; eauto with cshm.
   rewrite SF, dec_eq_true. simpl.
@@ -1028,7 +1028,7 @@ Proof.
 + assert (E: Int.signed (Int.repr sz) = sz).
   { apply Int.signed_repr.
     replace Int.max_signed with Ptrofs.max_signed.
-    generalize Int.min_signed_neg; omega.
+    generalize Int.min_signed_neg; lia.
     unfold Ptrofs.max_signed, Ptrofs.half_modulus, Ptrofs.modulus, Ptrofs.wordsize, Wordsize_Ptrofs.wordsize. rewrite SF. reflexivity.
   }
   econstructor; eauto with cshm. rewrite SF, dec_eq_true. simpl.
@@ -1103,7 +1103,7 @@ Proof.
   intros. apply Int64.ltu_inv in H. comput (Int64.unsigned Int64.iwordsize).
   assert (Int64.unsigned i = Int.unsigned (Int64.loword i)).
   { unfold Int64.loword. rewrite Int.unsigned_repr; auto.
-    comput Int.max_unsigned; omega. }
+    comput Int.max_unsigned; lia. }
   split; auto. unfold Int.ltu. apply zlt_true. rewrite <- H0. tauto.
 Qed.
 
@@ -1115,7 +1115,7 @@ Proof.
   intros. apply Int64.ltu_inv in H. comput (Int64.unsigned (Int64.repr 32)).
   assert (Int64.unsigned i = Int.unsigned (Int64.loword i)).
   { unfold Int64.loword. rewrite Int.unsigned_repr; auto.
-    comput Int.max_unsigned; omega. }
+    comput Int.max_unsigned; lia. }
   unfold Int.ltu. apply zlt_true. rewrite <- H0. tauto.
 Qed.
 
@@ -1125,7 +1125,7 @@ Lemma small_shift_amount_3:
   Int64.unsigned (Int64.repr (Int.unsigned i)) = Int.unsigned i.
 Proof.
   intros. apply Int.ltu_inv in H. comput (Int.unsigned Int64.iwordsize').
-  apply Int64.unsigned_repr. comput Int64.max_unsigned; omega.
+  apply Int64.unsigned_repr. comput Int64.max_unsigned; lia.
 Qed.
 
 Lemma make_shl_correct: shift_constructor_correct make_shl sem_shl.
@@ -2166,14 +2166,14 @@ Ltac resvalid:=
     |- MemClosures_local.unmapped_closed _ ?m2 ?m2'
     => inv H3; eapply MemClosures_local.store_val_inject_unmapped_closed_preserved;
        try (rewrite Z.add_0_r);  try eassumption;
-       try (compute; eauto; fail); try omega
+       try (compute; eauto; fail); try lia
   | H1: Mem.free ?m1 _ _ _ = Some ?m2,
         H2: Mem.free ?m1' _ _ _ = Some ?m2',
             H3: proper_mu _ _ _ _ 
     |- MemClosures_local.unmapped_closed _ ?m2 ?m2'
     => inv H3; eapply MemClosures_local.free_inject_unmapped_closed_preserved; eauto;
       try (rewrite Z.add_0_r);  try eassumption;
-      try (compute; eauto; fail); try omega
+      try (compute; eauto; fail); try lia
   | H1: Mem.alloc ?m1 _ _ = (?m2, _),
         H2: Mem.alloc ?m1' _ _ = (?m2', _),
             H3: proper_mu _ _ _ _
@@ -2665,7 +2665,7 @@ Proof.
       revert SVALID TVALID C H0 AGMU RCPRESV MEXT H8;clear;revert m m1 Lm x2 te1.
       generalize empty_env.
       induction x0;intros;inv C;inv H0;auto.
-      eapply Mem.alloc_extends with(lo2:=0)(hi2:=sz) in H4 as ?;eauto;try omega.
+      eapply Mem.alloc_extends with(lo2:=0)(hi2:=sz) in H4 as ?;eauto;try lia.
       Hsimpl. rewrite H in H10;inv H10.
       assert(MemClosures_local.unmapped_closed mu m2 m3). resvalid.
       eapply IHx0 in H1;eauto;resvalid.

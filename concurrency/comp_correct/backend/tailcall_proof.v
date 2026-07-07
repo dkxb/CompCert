@@ -59,11 +59,11 @@ Proof.
   intro f.
   assert (forall n pc, (return_measure_rec n f pc <= n)%nat).
     induction n; intros; simpl.
-    omega.
-    destruct (f!pc); try omega.
-    destruct i; try omega.
-    generalize (IHn n0). omega.
-    generalize (IHn n0). omega.
+    lia.
+    destruct (f!pc); try lia.
+    destruct i; try lia.
+    generalize (IHn n0). lia.
+    generalize (IHn n0). lia.
   intros. unfold return_measure. apply H.
 Qed.
 
@@ -73,11 +73,11 @@ Remark return_measure_rec_incr:
   (return_measure_rec n1 f pc <= return_measure_rec n2 f pc)%nat.
 Proof.
   induction n1; intros; simpl.
-  omega.
-  destruct n2. omegaContradiction. assert (n1 <= n2)%nat by omega.
-  simpl. destruct f!pc; try omega. destruct i; try omega.
-  generalize (IHn1 n2 n H0). omega.
-  generalize (IHn1 n2 n H0). omega.
+  lia.
+  destruct n2. omegaContradiction. assert (n1 <= n2)%nat by lia.
+  simpl. destruct f!pc; try lia. destruct i; try lia.
+  generalize (IHn1 n2 n H0). lia.
+  generalize (IHn1 n2 n H0). lia.
 Qed.
 
 Lemma is_return_measure_rec:
@@ -90,10 +90,10 @@ Proof.
   destruct n'. omegaContradiction. simpl.
   destruct (fn_code f)!pc; try congruence.
   destruct i; try congruence.
-  decEq. apply IHn with r. auto. omega.
+  decEq. apply IHn with r. auto. lia.
   destruct (is_move_operation o l); try congruence.
   destruct (Reg.eq r r1); try congruence.
-  decEq. apply IHn with r0. auto. omega.
+  decEq. apply IHn with r0. auto. lia.
 Qed.
 
 (** ** Relational characterization of the code transformation *)
@@ -129,22 +129,22 @@ Proof.
   generalize H. simpl.
   caseEq ((fn_code f)!pc); try congruence.
   intro i. caseEq i; try congruence.
-  intros s; intros. eapply is_return_nop; eauto. eapply IHn; eauto. omega.
+  intros s; intros. eapply is_return_nop; eauto. eapply IHn; eauto. lia.
   unfold return_measure.
   rewrite <- (is_return_measure_rec f (S n) niter pc rret); auto.
   rewrite <- (is_return_measure_rec f n niter s rret); auto.
-  simpl. rewrite H2. omega. omega.
+  simpl. rewrite H2. lia. lia.
 
   intros op args dst s EQ1 EQ2.
   caseEq (is_move_operation op args); try congruence.
   intros src IMO. destruct (Reg.eq rret src); try congruence.
   subst rret. intro.
   exploit is_move_operation_correct; eauto. intros [A B]. subst.
-  eapply is_return_move; eauto. eapply IHn; eauto. omega.
+  eapply is_return_move; eauto. eapply IHn; eauto. lia.
   unfold return_measure.
   rewrite <- (is_return_measure_rec f (S n) niter pc src); auto.
   rewrite <- (is_return_measure_rec f n niter s dst); auto.
-  simpl. rewrite EQ2. omega. omega.
+  simpl. rewrite EQ2. lia. lia.
 
   intros or EQ1 EQ2. destruct or; intros.
   assert (r = rret). eapply proj_sumbool_true; eauto. subst r.
@@ -536,14 +536,14 @@ Ltac resvalid:=
     |- MemClosures_local.unmapped_closed _ ?m2 ?m2'
     => inv H3; eapply MemClosures_local.store_val_inject_unmapped_closed_preserved;
       try (rewrite Z.add_0_r);  try eassumption;
-      try (compute; eauto; fail); try omega
+      try (compute; eauto; fail); try lia
   | H1: Mem.free ?m1 _ _ _ = Some ?m2,
         H2: Mem.free ?m1' _ _ _ = Some ?m2',
             H3: proper_mu _ _ _ _ 
     |- MemClosures_local.unmapped_closed _ ?m2 ?m2'
     => inv H3; eapply MemClosures_local.free_inject_unmapped_closed_preserved; eauto;
       try (rewrite Z.add_0_r);  try eassumption;
-      try (compute; eauto; fail); try omega
+      try (compute; eauto; fail); try lia
   | H1: Mem.alloc ?m1 _ _ = (?m2, _),
         H2: Mem.alloc ?m1' _ _ = (?m2', _),
             H3: proper_mu _ _ _ _
@@ -669,7 +669,7 @@ Proof.
       
     + (* eliminated nop *)
       assert (s0 = pc') by congruence. subst s0.
-      Left. simpl. omega. splitMS.
+      Left. simpl. lia. splitMS.
 
     + (* op *)
       TransfInstr.
@@ -685,7 +685,7 @@ Proof.
 
     + (* eliminated move *)
       rewrite H2 in H. clear H2. inv H.
-      Left. simpl. omega.
+      Left. simpl. lia.
       splitMS. simpl in H0. rewrite PMap.gss. congruence.
 
     + (* load *)
@@ -792,7 +792,7 @@ Proof.
 
     + (* eliminated return None *)
       assert (or = None) by congruence. subst or.
-      Left. simpl. omega.
+      Left. simpl. lia.
       splitMS. eapply Mem.free_left_extends; eauto.
       eapply MemClosures_local.unchanged_on_unmapped_closed_preserved; eauto.
       inv AGMU; eauto. eapply Mem.free_unchanged_on; eauto using local_block_local'.
@@ -800,7 +800,7 @@ Proof.
       
     + (* eliminated return Some *)
       assert (or = Some r) by congruence. subst or.
-      Left. simpl. omega.
+      Left. simpl. lia.
       splitMS. 
       eapply Mem.free_left_extends; eauto.
       eapply MemClosures_local.unchanged_on_unmapped_closed_preserved; eauto.
@@ -809,8 +809,8 @@ Proof.
 
     + (* internal call *)
       exploit Mem.alloc_extends; eauto.
-      instantiate (1 := 0). omega.
-      instantiate (1 := fn_stacksize f). omega.
+      instantiate (1 := 0). lia.
+      instantiate (1 := fn_stacksize f). lia.
       intros [m'1 [ALLOC EXT]].
       assert (fn_stacksize (transf_function f) = fn_stacksize f /\
               fn_entrypoint (transf_function f) = fn_entrypoint f /\
@@ -843,7 +843,7 @@ Proof.
         FP. splitMS. apply set_reg_lessdef; auto.
       ++ (* return instr in source program, eliminated because of tailcall *)
         Left. unfold measure. simpl length.
-        generalize (return_measure_bounds (fn_code f) pc). unfold niter. omega.
+        generalize (return_measure_bounds (fn_code f) pc). unfold niter. lia.
         splitMS.
         rewrite Regmap.gss. auto.
 
