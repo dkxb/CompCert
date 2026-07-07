@@ -709,13 +709,6 @@ Tactic Notation "constructors" :=
 (* ---------------------------------------------------------------------- *)
 (** ** Assertions *)
 
-(** [false_goal] replaces any goal by the goal [False]. 
-    Contrary to the tactic [false] (below), it does not try to do
-    anything else *)
-
-Tactic Notation "false_goal" :=
-  elimtype False.
-
 (** [false_post] is the underlying tactic used to prove goals
     of the form [False]. In the default implementation, it proves
     the goal if the context contains [False] or an hypothesis of the
@@ -728,7 +721,7 @@ Ltac false_post :=
 (** [false] replaces any goal by the goal [False], and calls [false_post] *)
 
 Tactic Notation "false" :=
-  false_goal; try false_post.
+  exfalso; try false_post.
 
 (** [tryfalse] tries to solve a goal by contradiction, and leaves
     the goal unchanged if it cannot solve it.
@@ -744,17 +737,17 @@ Tactic Notation "tryfalse" :=
     Example: [tryfalse by congruence/] *)
 
 Tactic Notation "tryfalse" "by" tactic(tac) "/" :=
-  try solve [ false; instantiate; tac ].
+  try solve [ false; tac ].
 
 (** [false T] tries [false; apply T], or otherwise adds [T] as
     an assumption and calls [false]. *)
 
 Tactic Notation "false" constr(T) "by" tactic(tac) "/" :=
-  false_goal; first  
-    [ first [ apply T | eapply T | rapply T]; instantiate; tac  (* todo: sapply?*)
+  exfalso; first  
+    [ first [ apply T | eapply T | rapply T]; tac  (* todo: sapply?*)
     | let H := fresh in lets_base H T; 
       first [ discriminate H  (* optimization *)
-            | false; instantiate; tac ] ].
+            | false; tac ] ].
    (* todo: false (>> H X1 X2)... *)
 
 Tactic Notation "false" constr(T) :=
@@ -1413,7 +1406,7 @@ Ltac equates_several E cont :=
   let rec go pos :=
      match pos with
      | nil => cont tt
-     | (boxer ?n)::?pos' => equates_one n; [ instantiate; go pos' | ]
+     | (boxer ?n)::?pos' => equates_one n; [ go pos' | ]
      end in
   go all_pos.
 
