@@ -4,7 +4,7 @@ Require Import Blockset Footprint GMemory InteractionSemantics GAST
         GlobDefs ETrace NPSemantics
         Injections TypedSemantics. 
 
-Require Import Arith Wf Classical_Prop FunctionalExtensionality.
+Require Import Arith Coq.Init.Wf Classical_Prop FunctionalExtensionality.
 (** This file contains the lemma [np_step_det], which says that if the languages are deterministic, then the non-preemptive semantics is also deterministic. *)
 Module NPDet.
   Section det_def.

@@ -106,8 +106,7 @@ Lemma init_tp_next:
 Proof.
   induction e; intros thdp INIT; inv INIT; simpl; auto.
   apply IHe in H2. rewrite <- H2. generalize (ThreadPool.next_tid thdp0). clear.
-  intro. rewrite minus_Sn_m, Pos2Nat.inj_succ; auto.
-  apply Pos2Nat.is_pos.
+  intro. rewrite Pos2Nat.inj_succ. lia.
 Qed.
 
 Lemma init_get_valid_spec:
@@ -356,13 +355,13 @@ Section Compositionality.
       assert (STPTID': Plt t0 (ThreadPool.next_tid stp)).
       { exploit (ThreadPool.init_inv e stp); eauto. intro.
         destruct (plt t0 (ThreadPool.next_tid stp)); auto.
-        exfalso. unfold ThreadPool.get_cs in *. erewrite ThreadPool.tp_finite in GETCS. discriminate. eauto.
-        eauto with coqlib. }
+        exfalso. unfold ThreadPool.get_cs in *. erewrite ThreadPool.tp_finite in GETCS.
+        discriminate. eauto with coqlib. apply Pos.le_nlt; auto. }
       assert (TTPTID': Plt t0 (ThreadPool.next_tid ttp)).
       { exploit (ThreadPool.init_inv e ttp); eauto. intro.
         destruct (plt t0 (ThreadPool.next_tid ttp)); auto.
-        exfalso. unfold ThreadPool.get_cs in *. erewrite ThreadPool.tp_finite in GETCS'. discriminate. eauto.
-        eauto with coqlib. }
+        exfalso. unfold ThreadPool.get_cs in *. erewrite ThreadPool.tp_finite in GETCS'.
+        discriminate. eauto with coqlib. apply Pos.le_nlt; auto. }
       exploit init_get_valid_spec; try eexact STPTID'; eauto. 
       intros (funid & mid & cc & fid & NTH & GETMOD & INIT & SGETCS).
       exploit init_get_valid_spec; try eexact TTPTID'; eauto.

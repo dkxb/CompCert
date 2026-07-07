@@ -697,17 +697,18 @@ Section StateInvs.
     inversion H3.
     { exfalso. inversion Hinvt. apply tp_valid in H. destruct H.
       unfold ThreadPool.get_cs in H4. rewrite H in H4. discriminate. }
-    { assert (ThreadPool.valid_tid thread_pool t).
-      unfold ThreadPool.valid_tid.
-      destruct (plt t (ThreadPool.next_tid thread_pool)); auto.
-      inversion Hinvs.
-      unfold ThreadPool.get_cs in H0.
-      rewrite tp_finite in H0; auto. discriminate.
-      specialize (H2 H5).
-      inversion H2. rewrite <- H0 in H6. inversion H6; subst.
+    { assert (Hvtid: ThreadPool.valid_tid thread_pool t).
+      { unfold ThreadPool.valid_tid.
+        destruct (plt t (ThreadPool.next_tid thread_pool)); auto.
+        inversion Hinvs.
+        unfold ThreadPool.get_cs in H0.
+        rewrite tp_finite in H0; try extlia. discriminate. }
+      specialize (H2 Hvtid).
+      inversion H2 as [TP0 i0 cs0 Hget Hemp].
+      rewrite <- H0 in Hget. inversion Hget; subst.
       econstructor; eauto.
       inversion H4; auto.
-      inversion H7. congruence. }
+      inversion Hemp. congruence. }
   Qed.
 
   Lemma sim_tau_step:
@@ -1551,7 +1552,7 @@ Section StateInvs.
                         {| thread_pool := tthdp; cur_tid := stid'; gm := tm; atom_bit := O |}
                         FP.emp
                         {| thread_pool := tthdp''; cur_tid := stid'; gm := tm; atom_bit := O |}) as Htplus.
-      { eapply tau_plus_1. eapply Call with (c1:= (<< i, c0, sg0, F >>)); eauto. }
+      { eapply tau_plus_1. eapply Call with (c:= (<< i, c0, sg0, F >>)); eauto. }
       
       split; auto.
       split.
@@ -1768,7 +1769,7 @@ Section StateInvs.
         inversion H1' as [c0 cs0 cc c'0 H0'' H1'' H2'' H3''].
         subst; simpl in *.
 
-        eapply Return with (c1:=(<<tix_top, tcc, Core.sg c, F>>)); eauto.
+        eapply Return with (c:=(<<tix_top, tcc, Core.sg c, F>>)); eauto.
         { find_relatives tthdp. clear. intros. solv_thread'. }
         { find_relatives tthdp'. clear; intros. solv_thread'. solv_pmap. congruence. }
         { simpl.
@@ -1949,7 +1950,7 @@ Section StateInvs.
                       tau FP.emp
                       {| thread_pool := tthdp'; cur_tid := stid'; gm := tm; atom_bit := O|}
              ) as Htreturn.
-      { eapply Halt with (c0:= tc); subst; eauto.
+      { eapply Halt with (c:= tc); subst; eauto.
         generalize H_tp_tcs; clear; intros; solv_thread'. }
       
       eexists _, FP.emp, (i_wrap _ _ Hwf i), FP.emp, FP.emp.
@@ -2065,13 +2066,14 @@ Section StateInvs.
      *)
     pose proof Hldsim_top' as Hldsim_top.
     eapply match_after_external in  Hldsim_top'; eauto; try (econstructor; eauto; fail).
-    destruct Hldsim_top' as (tcc'' & H_core_aftext' & i0'' & Hmatch_top'').
-    { instantiate (2:= sm). instantiate (1:= tm).
-      generalize HLG Hldsim_top match_top'. clear. intros.
-      eapply match_HG in Hldsim_top; eauto. clear match_top'.
-      destruct HLG, Hldsim_top. destruct H, H2.
-      constructor; auto; constructor; auto;
-        try apply GMem.forward_refl; try apply GMem.unchanged_on_refl. }
+    destruct Hldsim_top' as (tcc'' & H_core_aftext' & Hrely).
+    destruct (Hrely sm tm
+      ltac:(generalize HLG Hldsim_top match_top'; clear; intros;
+            eapply match_HG in Hldsim_top; eauto; clear match_top';
+            destruct HLG, Hldsim_top; destruct H, H2;
+            constructor; auto; constructor; auto;
+              try apply GMem.forward_refl; try apply GMem.unchanged_on_refl))
+      as (i0'' & Hmatch_top'').
     
     assert (exists tthdp', ThreadPool.update tthdp stid (<< i, tcc'', Core.sg c, F >>) tthdp')
       as H_tp_upd'.

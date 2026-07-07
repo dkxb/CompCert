@@ -3,7 +3,7 @@ Require Import Footprint InteractionSemantics GAST GMemory
 
 Require Import DRF USimDRF NPDRF.
 
-Require Import Classical Wf Arith ListDom.
+Require Import Classical Coq.Init.Wf Arith ZArith Lia ListDom.
 
 Require Import FPLemmas PRaceLemmas Init SmileReorder ConflictReorder Init DRFLemmas SimEtr.
 Local Notation "'<<' i ',' c ',' sg ',' F '>>'" := {|Core.i := i; Core.c := c; Core.sg := sg; Core.F := F|} (at level 60, right associativity).
@@ -45,7 +45,7 @@ Section Refinement.
   Lemma threadpool_spawn_domadd:
     forall ge t mid c sg ,
       let t' :=  @ThreadPool.spawn ge t mid c sg in
-      ThreadPool.next_tid t' = BinPos.Psucc (ThreadPool.next_tid t).
+      ThreadPool.next_tid t' = Pos.succ (ThreadPool.next_tid t).
   Proof.
     intros.
     unfold ThreadPool.spawn in t'.
@@ -562,7 +562,7 @@ Section Refinement.
     forall (step:@Step ge) s,
       silent_diverge step s<->silent_diverge (lstep step) s.
   Proof.
-    split;revert step s;cofix;intros.
+    split;revert step s;cofix CIH;intros.
     inversion H;subst.
     econstructor;eauto. constructor. econstructor;eauto.
     inversion H;subst.
@@ -607,7 +607,7 @@ Section Refinement.
       silent_diverge (lstep (@np_step ge)) s->silent_diverge (tau_plus'(lstep glob_step)) s.
 
   Proof.
-    cofix.
+    cofix CIH.
     intros.
     inversion H;subst.
     apply sw_star_lstep_lemma in H0;subst.
@@ -631,7 +631,7 @@ Section Refinement.
     forall (step:@Step ge) s,
       silent_diverge (tau_plus' step) s->silent_diverge step s.
   Proof.
-    cofix.
+    cofix CIH.
     intros.
     apply tauplus'_diverge_inv in H.
     destruct H as (?&?&?&?).
@@ -824,7 +824,7 @@ Section Refinement.
       @inf_etr_alt ge step abort final pc b->
       inf_etr step abort final pc b.
   Proof.
-    cofix.
+    cofix CIH.
     intros.
     apply inf_etr_alt_inv in H as (fp&pc'&pc''&v&b'&eq&nstar1&step1&inf').
     subst.
@@ -868,7 +868,7 @@ Section Refinement.
       inf_etr glob_step a f pc b->
       @inf_etr_alt2 ge glob_step a f pc b.
   Proof.
-    cofix;inversion 3;subst.
+    cofix CIH;inversion 3;subst.
     apply non_evt_star_star in H3 as ?;destruct H5.
     apply GE_mod_wd_star_tp_inv2 in H5;try assumption.
     eapply GE_mod_wd_tp_inv in H5 as ?;try eassumption.
@@ -886,7 +886,7 @@ Section Refinement.
       @inf_etr_alt2 ge step abort final pc b->
       inf_etr step abort final pc b.
   Proof.
-    cofix.
+    cofix CIH.
     intros.
     inversion H;subst.
     apply sw_step_non_evt_star in H3.
@@ -899,7 +899,7 @@ Section Refinement.
       @inf_etr ge np_step np_abort final_state pc b->
       inf_etr_alt2 glob_step abort final_state pc b.
   Proof.
-    cofix.
+    cofix CIH.
     intros.
     inversion H;subst.
     apply non_evt_star_equiv in H1.
@@ -923,7 +923,7 @@ Section Refinement.
       @inf_etr ge step abort final pc b->
       Etr step abort final pc b.
   Proof.    
-    cofix.
+    cofix CIH.
     intros.
     inversion H;subst.
     econstructor;eauto.
@@ -3712,7 +3712,7 @@ Section Refinement.
     Local Arguments cur_valid_id [GE].
     Local Arguments changepc [GE].
     Local Arguments mem_eq_pc [GE].
-    Local Arguments ProgConfig [GE].
+    Local Arguments ProgConfig {GE}.
     Local Arguments noevt_stepN [GE].
     Local Arguments Sdiverge [GE].
     Local Arguments Pdiverge [GE].
@@ -3839,7 +3839,7 @@ Section Refinement.
       I_psilent_diverge pc->
       core_Idiverge pc.
   Proof.
-    cofix.
+    cofix CIH.
     intros.
     apply I_psilent_diverge_inv in H as ?;Hsimpl.
     econstructor;eauto. inversion H;subst;auto.
@@ -3857,11 +3857,11 @@ Section Refinement.
       core_Idiverge pc ->
       npsilent_diverge pc.
   Proof.
-    cofix.
+    cofix CIH.
     inversion 1;subst.
     apply type_step_elim in H1.
     econstructor;eauto. constructor.
-    apply core_Idiverge_npsilent_diverge in H2.
+    apply CIH in H2.
     auto.
   Qed.
 
@@ -4127,7 +4127,7 @@ Section Refinement.
       O_psilent_diverge pc->
       Odiverge pc.
   Proof.
-    cofix.
+    cofix CIH.
     intros.
     assert(L1:atom_bit pc = O). destruct H0;auto.
     apply O_psilent_diverge_inv' in H0;try apply H.
@@ -4187,12 +4187,12 @@ Section Refinement.
       neverIdiverge pc ->
       npnswdiverge pc.
   Proof.
-    cofix.
+    cofix CIH.
     intros.
     destruct H.
     inversion H;subst.
     econstructor;eauto.
-    apply Odiverge_neverIdiverge_npnswdiverge.
+    apply CIH.
     split;auto.
     intro;contradict H0.
     Hsimpl.
@@ -4368,7 +4368,7 @@ Section Refinement.
       ~ will_neverIdiverge pc ->
       blockdiverge pc.
   Proof.
-    cofix;intros.
+    cofix CIH;intros.
     apply Odiverge_O in H as ?.
     apply Odiverge_not_will_neverIdiverge_inv in H;try apply H0.
     Hsimpl.
@@ -4739,7 +4739,7 @@ Section diverge_proof.
        blockdiverge ge pc'' ->
        blockdiverge_tid pc (cur_tid pc').
   Proof.
-    cofix.
+    cofix CIH.
     intros.
     inversion H3;subst.
     econstructor;eauto.
@@ -4817,7 +4817,7 @@ Section diverge_proof.
       blockdiverge_tid pc t->
       blockdiverge_tid pc' t.
   Proof.
-    cofix.
+    cofix CIH.
     inversion 4;subst.
     assert(o1:atom_bit pc' = O). destruct H;Hsimpl;congruence.
     assert(o2:ThreadPool.inv (thread_pool pc')). destruct H;Hsimpl;congruence.
@@ -4886,7 +4886,7 @@ Section diverge_proof.
       blockdiverge_tid pc t ->
       Pdiverge ge ({-|pc,t}).
   Proof.
-    cofix.
+    cofix CIH.
     intros.
     inversion H0;subst.
     inversion H as [R1 _].
@@ -4925,7 +4925,7 @@ Section diverge_proof.
     eapply npsw_swstar in H15;try apply H16.
     apply ne_plus1 in H15 as ?;[|right;auto].
     eapply non_evt_star_cons_step in H14;try apply H17.
-    econstructor. eauto. eapply blockdiverge_tid_npdiverge in H7;eauto.
+    econstructor. eauto. eapply CIH in H7;eauto.
     eapply atomblockstarN_globstar in H13 as ?.
     Hsimpl.
     eapply drf_pc_glob_cons;eauto.
@@ -5315,7 +5315,8 @@ Section diverge_proof.
     intros;Hsimpl.
     pose proof drf_pc_glob_l1 _ _  H as [v1 wdge].
     pose proof drf_pc_glob_l2 _ _ H as modwdge.
-    inversion H as [o1 _].
+    pose proof H as Hatom_pc.
+    destruct Hatom_pc as [Hatom_pc _].
     assert(R3:tau<>sw). intro T;inversion T.
     intros.
     apply npnswstep_taustep in H0 as ?;subst.
@@ -5343,7 +5344,7 @@ Section diverge_proof.
         apply halfatomblockstep_cur_valid_id in H0 as ?;auto.
         apply halfatomblockstep_star in H0 as[].
         assert(glob_step pc sw FP.emp ({-|pc,t})).
-        destruct pc,H11;simpl in *;subst. rewrite o1. econstructor;eauto.
+        destruct pc,H11;simpl in *;subst. econstructor;eauto.
         eapply star_step in H12;eauto.
         eapply H9 in H12;eauto. congruence.
       }
@@ -5419,7 +5420,7 @@ Section diverge_proof.
       eapply drf_pc_glob_safe in H. eapply H in H8;congruence.
     }
     {
-      Hsimpl. inversion H as [o1 _].
+      Hsimpl. pose proof H as Hatom_pc. destruct Hatom_pc as [Hatom_pc _].
       apply npnsw_step_O_preservation in H0 as o3;auto.
       apply npnsw_step_O_preservation in H4 as o2;auto.
       eapply drf_pc_glob_drf in H;contradict H.
@@ -5715,33 +5716,33 @@ Section diverge_proof.
       core_Idiverge ge pc->
       core_Idiverge ge pc'.
   Proof.
-    cofix.
+    cofix CIH.
     intros.
     inversion H3;subst.
+    pose proof H2 as Hpre_all.
     specialize (H2 fp) as ?.
     apply core_step_equiv in H5. pose proof H5 as R.
     apply tau_plus_1 in H5. apply tau_plus2star in H5.
     specialize (H7 pc'0 H5).
-    eapply corestep_Glocality in H7 as ?;try apply R;try assumption.
-    Hsimpl.
+    eapply corestep_Glocality in H7 as (pc1'&TStep&GPost_step&TSim);try apply R;try assumption.
 
     econstructor. unfold thread_sim in H1. Hsimpl;congruence.
     apply core_step_equiv;eauto.
 
-    apply type_glob_step_elim in R as ?.
-    eapply GE_mod_wd_tp_inv in H11 as ?;eauto.
-    apply type_glob_step_elim in H8 as ?.
-    eapply GE_mod_wd_tp_inv in H13 as ?;eauto.
-    eapply thread_sim_coreIdiverge;try apply H10;eauto.
+    apply type_glob_step_elim in R as Rglob.
+    eapply GE_mod_wd_tp_inv in Rglob as Inv_src;eauto.
+    apply type_glob_step_elim in TStep as Tglob.
+    eapply GE_mod_wd_tp_inv in Tglob as Inv_tgt;eauto.
+    eapply CIH;try apply TSim;eauto.
 
     intros.
-    eapply globstep_eff in H11 as ?;eauto. eapply globstep_eff in H13 as ?;eauto.
-    assert(cur_tid pc'0 = cur_tid pc). inversion R;auto.
-    rewrite H18.
-    assert(cur_tid pc' = cur_tid pc). destruct H1;Hsimpl;auto.
-    rewrite H19 in H17.
+    eapply globstep_eff in Rglob as Eff_src;eauto. eapply globstep_eff in Tglob as Eff_tgt;eauto.
+    assert(Hcur_src: cur_tid pc'0 = cur_tid pc). inversion R;auto.
+    rewrite Hcur_src.
+    assert(Hcur_sim: cur_tid pc' = cur_tid pc). destruct H1;Hsimpl;auto.
+    rewrite Hcur_sim in Eff_tgt.
     eapply GPre_GEffect_GPost_Rule;eauto.
-    eapply H2;eauto. eapply tau_star_star;eauto.
+    eapply Hpre_all;eauto. eapply tau_star_star;eauto.
   Qed.
 
 
@@ -5751,7 +5752,7 @@ Section diverge_proof.
       core_Idiverge ge pc->
       core_Idiverge ge pc'.
   Proof.
-    cofix.
+    cofix CIH.
     inversion 3;subst.
     
     apply core_step_equiv in H2. assert(atom_bit pc' = I). inversion H as (?&?&?&?);subst;auto. congruence.
@@ -5837,64 +5838,88 @@ Section diverge_proof.
       apply npnsw_or_sw_stepN_0 in H15.
       Hsimpl;subst.
       rewrite (swstar_l1 _ _ _ H22) in H16.
-      assert(cur_tid x17 = x7). destruct R;Hsimpl. simpl in *;congruence.
-      apply npnsw_taustar_tid_preservation in H14 as ?. simpl in H21.
-      try rewrite H15,H21,pc_cur_tid in H16.
+      assert(Hcur_x17: cur_tid x17 = x7). destruct R;Hsimpl. simpl in *;congruence.
+      apply npnsw_taustar_tid_preservation in H14 as Hcur_x15. simpl in Hcur_x15.
+      try rewrite H15,Hcur_x15,pc_cur_tid in H16.
 
       apply npnsw_taustar_thdpinv in H14 as?;auto.
-      apply type_glob_step_cur_valid_id in H16 as ?;auto;try congruence.
-      eapply npnsw_taustar_pc_valid_tid_backwards_preservation in H14 as ?;eauto.
-      assert(sw_star glob_step x4 ({-|x4,x7})).
+      apply type_glob_step_cur_valid_id in H16 as Hcur_valid_x15;auto;try congruence.
+      assert(Hvalid_x15_x17: pc_valid_tid x15 (cur_tid x17)).
+      { unfold cur_valid_id, SmileReorder.pc_valid_tid, pc_valid_tid, GSimDefs.pc_valid_tid in Hcur_valid_x15.
+        unfold pc_valid_tid, GSimDefs.pc_valid_tid.
+        simpl in Hcur_valid_x15 |- *.
+        exact Hcur_valid_x15. }
+      eapply npnsw_taustar_pc_valid_tid_backwards_preservation in H14 as Hvalid_x17;eauto.
+      assert(Hsw_x4_x7: sw_star glob_step x4 ({-|x4,x7})).
       econstructor 2;[|constructor].
-      destruct x4,H25. simpl in *;subst. econstructor;eauto.
+      destruct x4,Hvalid_x17. simpl in *;subst. econstructor;eauto.
 
-      apply corestar_npstar in H18 as ?.
-      apply entat_step_equiv in H16 as ?.
-      apply type_step_elim in H28.
+      apply corestar_npstar in H18 as Hcore_npstar.
+      apply entat_step_equiv in H16 as Hentat.
+      apply type_step_elim in Hentat.
 
-      eapply ETrace.ne_star_step in H27;eauto.
+      eapply ETrace.ne_star_step in Hcore_npstar;[|left;exact Hentat].
       apply glob_npnsw_star_to_np_taustar in H14.
       apply tau_star_non_evt_star in H14.
-      eapply non_evt_star_cons in H27;eauto.
+      assert(Hx15_switch: ({-|x15, cur_tid x17}) = x15).
+      { destruct x15;simpl in *. rewrite Hcur_x17, Hcur_x15. auto. }
+      rewrite Hx15_switch in Hcore_npstar.
+      eapply non_evt_star_cons in Hcore_npstar;[|exact H14].
       apply core_Idiverge_npsilent_diverge in H20. 
 
       destruct x.
       {
         inversion H3;subst.
         right. exists (cur_tid x15).
-        rewrite (swstar_l1 _ _ _ H0) in H25,H27;simpl in H25,H27.
-        split;[|auto].
-        eapply silent_diverge_cons_np_non_evt_star;eauto.
+        rewrite (swstar_l1 _ _ _ H0) in Hsw_x4_x7,Hcore_npstar;simpl in Hsw_x4_x7,Hcore_npstar.
+        split.
+        {
+          rewrite <- Hcur_x15.
+          eapply silent_diverge_cons_np_non_evt_star;[exact Hcore_npstar|exact H20].
+        }
+        {
+          assert(Hvalid_x4_x15: pc_valid_tid x4 (cur_tid x15)).
+          { rewrite <- Hcur_x15.
+            unfold ConflictReorder.pc_valid_tid, pc_valid_tid, GSimDefs.pc_valid_tid in Hvalid_x17 |- *.
+            simpl in Hvalid_x17 |- *.
+            exact Hvalid_x17. }
+          pose proof H0 as Hstar_pc_x4.
+          apply swstar_globstar in Hstar_pc_x4;Hsimpl.
+          pose proof (drf_pc_glob_l1 _ _ H) as [Hinv_pc _].
+          eapply pc_valid_tid_back_star;eauto.
+        }
       }
       {
-        apply atomblockstarN_cur_valid_tid in H3 as T1;auto;try congruence.
+        assert(Hinv_x3: invpc ge x3).
+        { pose proof (drf_pc_glob_l1 _ _ H) as [Hinv_pc _].
+          eapply sw_star_invpc_preservation;eauto. }
+        apply atomblockstarN_cur_valid_tid in H3 as T1;eauto;[|lia].
         eapply atomblockstarN_cons_swstar in H3;eauto.
-        eapply atomblockstarN_np in H3;eauto.
-        Hsimpl.
-        destruct H29.
-        Hsimpl.
-        simpl in H29.
-        assert(sw_star glob_step ({-|x4,x13})({-|x4,x7})).
-        econstructor 2;[|constructor].
-        destruct x4,H25,H10. simpl in *;subst. econstructor;eauto.
-        eapply npsw_swstar in H29;eauto.
+        eapply atomblockstarN_np in H3 as (pc_np&Hnp_non_evt&Hnp_tail);eauto;[|lia].
+        destruct Hnp_tail as [(t_sw&Hnp_sw)|Hallhalt].
+        {
+          simpl in Hnp_sw.
+          assert(Hsw_switch: sw_star glob_step ({-|x4,t_sw})({-|x4,x7})).
+          econstructor 2;[|constructor].
+          destruct x4,Hvalid_x17,H10. simpl in *;subst. econstructor;eauto.
+          eapply npsw_swstar in Hnp_sw;eauto.
 
-        assert(non_evt_star np_step x12 (FP.union FP.emp FP.emp) ({-|x4,x7})).
-        econstructor 2;eauto. constructor.
-        eapply non_evt_star_cons in H31;eauto.
-        eapply non_evt_star_cons in H27;eauto.
+          assert(Hsw_non_evt: non_evt_star np_step pc_np (FP.union FP.emp FP.emp) ({-|x4,x7})).
+          econstructor 2;eauto. constructor.
+          eapply non_evt_star_cons in Hsw_non_evt;eauto.
+          eapply non_evt_star_cons in Hcore_npstar;[|exact Hsw_non_evt].
+          assert(Hdiv_x3: npsilent_diverge ge x3).
+          { eapply silent_diverge_cons_np_non_evt_star;[exact Hcore_npstar|exact H20]. }
 
-        apply swstar_l1 in H0. rewrite H0 in *.
-        right. exists (cur_tid x3). split;auto.
-        eapply silent_diverge_cons_np_non_evt_star;eauto.
-
-        inversion H29;subst.
-        destruct H25. apply H_all_thread_halted in H21. contradiction.
-        lia.
-
-        rewrite (swstar_l1 _ _ _ H0). apply drf_pc_glob_l1 in H as [];auto.
-        lia.
-        rewrite (swstar_l1 _ _ _ H0). apply drf_pc_glob_l1 in H as [];auto.
+          apply swstar_l1 in H0 as Hpc_x3.
+          rewrite Hpc_x3 in Hdiv_x3, T1.
+          right. exists (cur_tid x3). split;auto.
+        }
+        {
+          inversion Hallhalt;subst.
+          destruct Hvalid_x17 as [Hvalid_x17_tid Hnot_halted_x17].
+          apply H_all_thread_halted in Hvalid_x17_tid. contradiction.
+        }
       }
     }
     {
@@ -5969,11 +5994,21 @@ Section diverge_proof.
       {
         inversion H3;subst. apply swstar_l1 in H0.
         rewrite H0 in *;simpl in *.
-        right. exists (cur_tid x15). split;auto.
+        right. exists (cur_tid x15).
         apply glob_npnsw_star_to_np_taustar in H14.
         apply tau_star_non_evt_star in H14.
-        eapply non_evt_star_cons in H37;eauto.
-        eapply silent_diverge_cons_np_non_evt_star;eauto.
+        eapply non_evt_star_cons in H37;[|exact H14].
+        split.
+        {
+          rewrite <- H36.
+          eapply silent_diverge_cons_np_non_evt_star;[exact H37|exact H35].
+        }
+        {
+          rewrite <- H36.
+          unfold pc_valid_tid, GSimDefs.pc_valid_tid in H21 |- *.
+          simpl in H21 |- *.
+          exact H21.
+        }
       }
       {
         apply atomblockstarN_np in H3;auto.
@@ -6074,7 +6109,7 @@ Section diverge_proof.
       AO_psilent_diverge t pc ->
       AO_psilent_diverge t pc'.
   Proof.
-    cofix;inversion 5;subst.
+    cofix CIH;inversion 5;subst.
     eapply mem_eq_npnsw_or_sw_star in H2 as ? ;try apply H4;auto.
     Hsimpl.
 
@@ -6088,7 +6123,7 @@ Section diverge_proof.
     apply npnsw_or_sw_star_non_evt_star in H4;apply non_evt_star_star in H4 as [].
     apply GE_mod_wd_star_tp_inv2 in H4;auto.
     apply type_glob_step_elim in H5. apply GE_mod_wd_tp_inv in H5;auto.
-    econstructor;eauto.  eapply mem_eq_AO_psilent_diverge;eauto.
+    econstructor;eauto.  eapply CIH;eauto.
     rewrite<- H10. auto.
   Qed.
   Lemma AO_psilent_diverge_cons_npnsw_or_sw_star:
@@ -6277,7 +6312,7 @@ Definition no_rep (l:list tid):Prop:=
       npnswdiverge ge pc ->
       npnswdiverge ge pc'.
   Proof.
-    cofix.
+    cofix CIH.
     intros. inversion H1;subst.
     apply type_glob_step_exists in H3 as [].
     destruct x;try(inversion H3;fail).
@@ -6293,7 +6328,7 @@ Definition no_rep (l:list tid):Prop:=
     econstructor;eauto.
     destruct pc';inversion H0;subst. econstructor;eauto.
     rewrite <- pc_cur_tid in H8.
-    eapply mem_eq_npnswdiverge in H8;auto.
+    eapply CIH in H8;auto.
     apply type_glob_step_elim in H3. apply type_glob_step_elim in H4.
     apply GE_mod_wd_tp_inv in H3;auto.
     apply GE_mod_wd_tp_inv in H4;auto.
@@ -6482,7 +6517,7 @@ Definition no_rep (l:list tid):Prop:=
       ~ willdone ge pc lt (cur_tid pc)->
       npnsw_diverge' pc.
   Proof.
-    cofix;intros.
+    cofix CIH;intros.
     assert(drf_pc_glob pc'). rewrite <- pc_cur_tid with(pc:=pc) in H0; eapply drf_pc_glob_cons_npnsw in H as [];eauto.
     eapply npnswdiverge_notdone in H0 as ?;try eassumption.
     Hsimpl.
@@ -6776,7 +6811,7 @@ Definition no_rep (l:list tid):Prop:=
       npnsw_diverge' pc1->
       AO_psilent_diverge (cur_tid pc1) pc.
   Proof.
-    cofix.
+    cofix CIH.
     inversion 3;subst.
     econstructor;eauto.
 
@@ -6786,7 +6821,7 @@ Definition no_rep (l:list tid):Prop:=
     apply npnsw_step_tid_preservation in H3 as ?.
     rewrite H9.
     
-    eapply npnswdiverge_AO_psilent_diverge;eauto;[|econstructor;constructor].
+    eapply CIH;eauto;[|econstructor;constructor].
     rewrite <- pc_cur_tid with(pc:=pc1) in H3.
     eapply drf_pc_glob_cons_npnsw in H as [];eauto.
   Qed.    
@@ -6823,12 +6858,12 @@ Proof.
   exists x.
   split. apply AO_psilent_diverge_valid_t;auto.
   revert pc x H H0.
-  cofix.
+  cofix CIH.
   intros.
   eapply drf_safe_AO_psilent_diverge_inv in H0;Hsimpl;try apply H.
   econstructor;eauto. constructor.
   apply glob_npnsw_step_to_np_step in H1 as ?. 
-  Focus 2. eapply npnswdiverge_npdiverge;eauto.
+  Focus 2. eapply CIH;eauto.
   apply npnsw_step_tid_preservation in H1. simpl in H1. rewrite H1,pc_cur_tid.
   rewrite H1 in H3. eauto.
   auto.
@@ -7180,7 +7215,7 @@ Qed.
         inf_etr_alt2 glob_step a f pc' b.
   Proof.
     intros ge modwdge.
-    cofix.
+    cofix CIH.
     intros.
     inversion H;subst.
     eapply mem_eq_non_evt_star in H2;try apply H0;auto.
@@ -7193,7 +7228,7 @@ Qed.
     Hsimpl.
     apply type_glob_step_elim in H3.
     apply type_glob_step_elim in H4.
-    econstructor;try eapply mem_eq_inf_etr;eauto.
+    econstructor;try eapply CIH;eauto.
   Qed.
     
   Lemma inf_etr_glob_inf_etr:
@@ -7202,7 +7237,7 @@ Qed.
       inf_etr_alt2 (@glob_step ge) ab fn pc b->
       glob_inf_etr pc b.
   Proof.
-    cofix.
+    cofix CIH.
     intros.
     specialize (drf_pc_glob_l2 _ _ H) as modwdge.
     inversion H0;subst.
@@ -7260,7 +7295,7 @@ Qed.
         glob_inf_etr_2 pc' b->
         glob_inf_etr pc b.
   Proof.
-    cofix;intros.
+    cofix CIH;intros.
     inversion H0;subst.
     econstructor;try eapply glob_inf_etr_l1;eauto.
   Qed.
@@ -7271,7 +7306,7 @@ Qed.
       glob_inf_etr pc2 b->
       glob_inf_etr_2 pc0 (Behav_cons v b).
   Proof.
-    cofix.
+    cofix CIH.
     intros.
     inversion H1;subst.
     econstructor;try eapply glob_inf_etr_l2; eauto.
@@ -7310,7 +7345,7 @@ Qed.
       glob_inf_etr_2 pc' b->
       inf_etr np_step np_abort final_state pc' b.
   Proof.
-    cofix;inversion 5;subst.
+    cofix CIH;inversion 5;subst.
     apply GE_mod_wd_tp_inv in H2 as ?;auto.
     apply non_evt_thrd_globstar_inv_preserve in H5 as ?;auto.
     assert(cur_valid_id ge pc2).
@@ -7324,7 +7359,6 @@ Qed.
     econstructor;try eapply glob_inf_etr_np;try apply H12;try apply H13;eauto.
 
     eapply GE_mod_wd_tp_inv in H6;eauto.
-    eapply GE_mod_wd_tp_inv;eauto.
   Qed.
 
   Lemma config_refine_alt:
@@ -7508,6 +7542,3 @@ Qed.
   Qed.
 
 End Refinement.
-
-
-

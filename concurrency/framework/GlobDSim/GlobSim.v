@@ -2,9 +2,9 @@ Require Import Values.
 
 Require Import Blockset Footprint GMemory InteractionSemantics GAST
         GlobDefs ETrace NPSemantics
-        Injections GSimDefs GlobDSim GlobUSim NPSemantics GDefLemmas  NPDet. 
+        Injections GSimDefs GlobDSim GlobUSim NPSemantics GDefLemmas  NPDet.
 
-Require Import Arith Wf Classical_Prop FunctionalExtensionality.
+Require Import Arith Coq.Init.Wf Classical_Prop FunctionalExtensionality Lia.
 (** This file contains proof for flipping.*)
 Module GlobSim.
 
@@ -363,11 +363,13 @@ Module GlobSim.
       destruct pc as [thdp t gm bit].
       unfold ThreadPool.valid_tid;split.
       {
-        assert(Coqlib.Plt t thdp.(ThreadPool.next_tid) \/ BinPos.Pge t thdp.(ThreadPool.next_tid)).
+        assert(Coqlib.Plt t thdp.(ThreadPool.next_tid) \/ ~ Coqlib.Plt t thdp.(ThreadPool.next_tid)).
         apply classic.
         destruct H0;auto.
         inversion H as [tp_finite _ _ _].
-        apply tp_finite in H0. simpl in H0.
+        assert (H0': Coqlib.Ple (ThreadPool.next_tid thdp) t).
+        { unfold Coqlib.Plt, Coqlib.Ple in *. lia. }
+        apply tp_finite in H0'. simpl in H0'. clear H0. rename H0' into H0.
         clear tp_finite.
         inversion H_tp_core.
         unfold ThreadPool.get_top in H2.

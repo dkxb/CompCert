@@ -1,9 +1,9 @@
-Require Import Footprint InteractionSemantics GAST GMemory
+Require Import Coqlib Footprint InteractionSemantics GAST GMemory
         GlobDefs ETrace GlobSemantics GlobSemantics_Lemmas NPSemantics TypedSemantics .
 
 Require Import DRF USimDRF NPDRF FPLemmas PRaceLemmas.
 
-Require Import Classical Wf Arith.
+Require Import Classical Coq.Init.Wf Arith.
 (** This file contains lemmas about reordering under the condition of data-race-free, used in the semantics equivalence of P and NP.*)
 Local Notation "'<<' i ',' c ',' sg ',' F '>>'" := {|Core.i := i; Core.c := c; Core.sg := sg; Core.F := F|} (at level 60, right associativity).
 Local Definition pc_valid_tid {ge}:= @GSimDefs.pc_valid_tid ge.
@@ -759,7 +759,7 @@ Section Reorder.
 
     assert(ThreadPool.get_top thdp' tid' = Some c).
     unfold ThreadPool.get_top. rewrite <-cseq. auto.
-    edestruct gettop_push_exists with(mid:=new_ix)(c0:=cc')(sg:=sg);eauto.
+    edestruct (gettop_push_exists thdp' tid' c H new_ix cc' sg); eauto.
     eexists;split. econstructor;eauto.
     simpl;split;auto.
     split. apply unchanged_content_emp.
@@ -1236,7 +1236,11 @@ Section Reorder.
       i <> j ->
       Maps.PTree.set i v1 (Maps.PTree.set j v2 m) =
       Maps.PTree.set j v2 (Maps.PTree.set i v1 m).
-  Proof. induction i;intros;destruct m,j;simpl;auto;try (rewrite IHi;auto;intro;subst);contradiction. Qed.
+  Proof.
+    intros. apply Maps.PTree.extensionality. intro k.
+    repeat rewrite Maps.PTree.gsspec.
+    destruct (peq k i), (peq k j); subst; try congruence; auto.
+  Qed.
   Lemma pmap_set_sym:
     forall A i j m (v1 v2:A),
       i <> j ->
@@ -1462,8 +1466,9 @@ Section Reorder.
     apply NNPP;intro.
     assert(BinPos.Pos.ge t (ThreadPool.next_tid thdp)).
     auto.
-    apply tp_finite in H0.
-    rewrite Heqo in H0;inversion H0.
+    assert ((ThreadPool.next_tid thdp <= t)%positive) by extlia.
+    apply tp_finite in H1.
+    rewrite Heqo in H1;inversion H1.
   Qed.
   Lemma step_switchable:
     forall l pc fp pc',
@@ -1648,7 +1653,7 @@ Section Reorder.
       silent_diverge glob_step pc->
       silent_diverge glob_step pc'.
   Proof.
-    cofix.
+    cofix CIH.
     intros.
     inversion H0;subst.
     eapply mem_eq_swstar with(pc':=pc') in H1 as [?[]];auto.
@@ -2177,7 +2182,7 @@ Section Reorder.
     eapply gettop_preserve with(thdp2:=x) in H_tp_core;eauto.
     eapply gettop_preserve in H_tp_core;eauto.
     eexists;econstructor;simpl.
-    eapply GReturn with(c1:=c)(res1:=res);eauto.
+	    eapply GReturn with(c:=c)(res:=res);eauto.
     revert H_tp_pop H_tp_caller H6 H7 H8 H2;clear;intros.
     solv_thread. solv_thread;contradiction.
     apply mem_eq_pc_refl.
@@ -3506,7 +3511,7 @@ Section PRaceLemmas.
           tau_N (type_glob_step core) j pc fp1 pc1 /\
           type_glob_step extat pc1 tau FP.emp pc2 /\
           tau_N glob_step k pc2 fp2 pc' /\
-          FP.union fp1 fp2 = fp /\ j+k+1=i).
+	          FP.union fp1 fp2 = fp /\ (j + k + 1 = i)%nat).
   Proof.
     induction i;intros.
     {
@@ -3669,7 +3674,7 @@ Section PRaceLemmas.
         apply type_step_elim in H3.
         apply FP.conflict_sym in H6.
         assert(t2<>t1). intro;subst;contradiction.
-        eapply race_atom_1 with(id1:=t2)(id2:=t1)(fp3:=FP.emp)(pc1:=({-|pc,t2}));eauto.
+	        eapply race_atom_1 with(id1:=t2)(id2:=t1)(pc1:=({-|pc,t2}));eauto.
         constructor.
         revert H8;clear;induction 1.
         constructor.
@@ -3690,7 +3695,7 @@ Section PRaceLemmas.
         assert(atom_bit pc <> atom_bit pc').
         Coqlib.inv H0;auto. intro T;inversion T.
         apply type_step_elim in H0.
-        eapply race_atom_1 with(id1:=t1)(id2:=t2)(fp3:=FP.emp)(pc1:=({-|pc,t1}));eauto.
+        eapply race_atom_1 with(id1:=t1)(id2:=t2)(pc1:=({-|pc,t1}));eauto.
         constructor.
         revert H7;clear;induction 1.
         constructor.
@@ -3795,8 +3800,8 @@ Section Race_Proof.
     econstructor;eauto.
     econstructor;eauto. eapply npnsw_taustar_O_preservation;eauto. 
     econstructor;eauto.
-    assert(L:pc1' = ({-|pc1',id2})). destruct pc1';subst;auto.
-    rewrite <- L. eauto.
+	    assert (PC1switch: pc1' = ({-|pc1',id2})) by (destruct pc1'; simpl in *; subst; f_equal; auto).
+	    rewrite <- PC1switch. eauto.
     eapply npnsw_taustar_O_preservation;eauto.
     left;intro contra;inversion contra.
     

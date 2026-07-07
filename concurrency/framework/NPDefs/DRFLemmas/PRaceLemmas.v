@@ -3,7 +3,7 @@ Require Import Footprint InteractionSemantics GAST GMemory
 
 Require Import DRF USimDRF NPDRF FPLemmas.
 
-Require Import Classical Wf Arith.
+Require Import Classical Coq.Init.Wf Arith.
 (** This file contains auxiliary definitions used in the proof of equivalence of NPDRF and DRF*) 
 Local Notation "'<<' i ',' c ',' sg ',' F '>>'" := {|Core.i := i; Core.c := c; Core.sg := sg; Core.F := F|} (at level 60, right associativity).
 Local Definition pc_valid_tid {ge}:= @GSimDefs.pc_valid_tid ge.
