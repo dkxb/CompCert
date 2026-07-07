@@ -871,7 +871,7 @@ Section MATCHSTATE.
     unfold loadmax in *.
     ex_match.
     unfold size_chunk_nat,size_chunk in *.
-    assert(nat_of_Z 4=4%nat). auto.
+    assert(Z.to_nat 4=4%nat). auto.
     rewrite H3 in *. clear H3.
     unfold strip,GMem.perm in gvalinj0;simpl in gvalinj0.
     assert(decode_val Mint32 (Mem.getN 4 0 (Mem.mem_contents m2) # b') = v2).
