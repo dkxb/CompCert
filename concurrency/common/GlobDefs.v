@@ -86,7 +86,7 @@ Module FLists.
     intro. rewrite Nat.add_0_l.
     induction n. simpl. lia.
     do 2 rewrite plus_Snm_nSm. rewrite mult_comm.
-    replace 3%nat with (1 + 2)%nat by omega.
+    replace 3%nat with (1 + 2)%nat by lia.
     rewrite plus_assoc. rewrite Nat.mul_add_distr_l.
     rewrite Nat.div_add; lia.
     (* induction on m *)
@@ -94,7 +94,7 @@ Module FLists.
     rewrite plus_Snm_nSm. rewrite <- Nat.add_assoc.
     rewrite plus_Snm_nSm. rewrite <- Nat.add_assoc. rewrite plus_Snm_nSm.
     do 2 rewrite Nat.add_assoc.
-    replace 3%nat with (1 + 2)%nat by omega.
+    replace 3%nat with (1 + 2)%nat by lia.
     rewrite plus_assoc. rewrite Nat.mul_add_distr_r.
     rewrite mult_comm. rewrite plus_comm. rewrite mult_comm. rewrite plus_comm.
     rewrite Nat.div_add; lia.
@@ -243,9 +243,9 @@ Module FLists.
     assert (x <> y).
     { subst. apply arith_result1. auto. }
     assert (x > 0)%nat.
-    { subst. clear. pose proof (arith_result2 (Pos.to_nat f - 1) n1). omega. }
+    { subst. clear. pose proof (arith_result2 (Pos.to_nat f - 1) n1). lia. }
     assert (y > 0)%nat.
-    { subst. clear. pose proof (arith_result2 (Pos.to_nat f - 1) n2). omega. }
+    { subst. clear. pose proof (arith_result2 (Pos.to_nat f - 1) n2). lia. }
     clear Heqx Heqy H.
     
     intro.
@@ -257,7 +257,7 @@ Module FLists.
     pose proof (Nat2Pos.inj_compare x y).
     rewrite <- Pos.compare_eq_iff in H.
     rewrite H in H0.
-    apply Nat.compare_eq_iff. apply H0; omega.
+    apply Nat.compare_eq_iff. apply H0; lia.
   Qed.
 
   (** disj among freelists *)
@@ -271,9 +271,9 @@ Module FLists.
     rewrite Nat.add_0_r in Heqx.
     rewrite Nat.add_0_r in Heqy.
     assert (x > 0)%nat.
-    { subst. clear. pose proof (arith_result2 (Pos.to_nat f1 - 1) n1). omega. }
+    { subst. clear. pose proof (arith_result2 (Pos.to_nat f1 - 1) n1). lia. }
     assert (y > 0)%nat.
-    { subst. clear. pose proof (arith_result2 (Pos.to_nat f2 - 1) n2). omega. }
+    { subst. clear. pose proof (arith_result2 (Pos.to_nat f2 - 1) n2). lia. }
     assert (tmp1: forall x y, (Pos.to_nat x - 1)%nat = (Pos.to_nat y - 1)%nat -> x = y).
     { clear. intros. lia. }
     assert (x <> y).
@@ -289,7 +289,7 @@ Module FLists.
     pose proof (Nat2Pos.inj_compare x y).
     rewrite <- Pos.compare_eq_iff in H.
     rewrite H in H2.
-    apply Nat.compare_eq_iff. apply H2; omega.
+    apply Nat.compare_eq_iff. apply H2; lia.
   Qed.
     
   (* mapping fids to countable fid streams *)
@@ -769,11 +769,11 @@ Module ThreadPool.
       { destruct n1; destruct n2; auto; simpl in *.
         inversion H; subst; clear H; simpl in *. exfalso.
         apply nth_error_in in H1. apply fid_valid0 in H1. destruct H1 as (n&Hneq&H1).
-        rewrite <- H1 in H2. clear H1. assert (nf <> n) by omega.
+        rewrite <- H1 in H2. clear H1. assert (nf <> n) by lia.
         destruct (GlobEnv.wd_fl _ Hwdge). eapply thread_fl_norep; eauto.
         inversion H1; subst; clear H1; simpl in *. exfalso.
         apply nth_error_in in H. apply fid_valid0 in H. destruct H as (n&Hneq&H).
-        rewrite <- H in H2. clear H. assert (nf <> n) by omega.
+        rewrite <- H in H2. clear H. assert (nf <> n) by lia.
         destruct (GlobEnv.wd_fl _ Hwdge). eapply thread_fl_norep; eauto.
         
         apply (fid_disjoint0 _ _ _ _ H) in H1; auto. }
@@ -792,7 +792,7 @@ Module ThreadPool.
       apply fid_valid0; auto. apply in_cons; auto.
       specialize (fid_disjoint0 (S n1) (S n2)); simpl in *.
       assert (S n1 = S n2) by (eapply fid_disjoint0; eauto).
-      omega.
+      lia.
     Qed.
       
     (* invariants *)
