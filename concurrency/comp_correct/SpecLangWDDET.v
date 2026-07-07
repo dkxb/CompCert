@@ -87,12 +87,12 @@ Proof.
     subst.
     apply Mem.setN_outside;simpl.
     
-    destruct zle;try xomega.
+    destruct zle;try lia.
     destruct zlt;inv H.
     
     pose proof minlength (te' r).
     rewrite H. simpl.
-    xomega.
+    lia.
     
     split;intros;split;auto.
     intros. inv H;unfold GMem.perm, Memperm.perm_order' in *;simpl in *;try congruence.
@@ -117,12 +117,12 @@ Proof.
     subst.
     apply Mem.setN_outside;simpl.
     
-    destruct zle;try xomega.
+    destruct zle;try lia.
     destruct zlt;inv H.
     
     pose proof minlength (te' r).
     rewrite H. simpl.
-    xomega.
+    lia.
     
     split;intros;split;auto.
     intros. inv H;unfold GMem.perm, Memperm.perm_order' in *;simpl in *;try congruence.
@@ -243,7 +243,7 @@ Proof.
     assert(range_locset b 0 4 b ofs = true).
     unfold range_locset.
     ex_match2.
-    destruct zle,zlt;try xomega;auto.
+    destruct zle,zlt;try lia;auto.
     specialize (EffectPermEqPre _ _ H1).
     assert(GMem.perm (strip m) b ofs Memperm.Max Memperm.Writable).
     unfold GMem.perm,strip;simpl;auto.
@@ -288,7 +288,7 @@ Proof.
         destruct peq.
         subst.
         unfold belongsto,Locs.belongsto,range_locset in H1.
-        ex_match. destruct zle,zlt;try discriminate;try xomega.
+        ex_match. destruct zle,zlt;try discriminate;try lia.
         eapply setN_geteq2;eauto.
         rewrite minlength. auto.
 
