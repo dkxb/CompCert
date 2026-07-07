@@ -127,7 +127,7 @@ Section usim_diverge.
       Sdiverge TGE tpc->
       Sdiverge SGE spc.
   Proof.
-    intros. apply Pdiverge_sound. revert i mu fpS fpT spc tpc H H0;cofix;intros.
+    intros. apply Pdiverge_sound. revert i mu fpS fpT spc tpc H H0;cofix Hcofix;intros.
     eapply usim_Sdiverge_inva in H0 as ?;try apply H.
     Hsimpl.
     eapply tau_star_cons_step_non_evt_plus in H5;try apply H6;auto.
@@ -442,7 +442,7 @@ Section usim_diverge.
           SEtr TGE tpc b->
           SEtr SGE spc b.
   Proof.
-    cofix.
+    cofix Hcofix.
     intros.
     inversion H0;subst.
     {
@@ -504,7 +504,7 @@ Proof.
   unfold safe_state;intros.
   apply np_safe_config_cons in H0 as [];eauto.
   revert ge pc H.
-  cofix. intros.
+  cofix Hcofix. intros.
   unfold safe_state in H.
   
   econstructor. eapply H. constructor.

@@ -79,8 +79,13 @@ Proof.
     repeat match goal with
            | H: context[match ?x with _ => _ end] |- _ => destruct x eqn:?Hx; try discriminate
            end.
-    inv H0. split. auto. destruct (plt t (ThreadPool.next_tid thdp)); auto.
-    rewrite ThreadPool.tp_finite in Hx; try discriminate; auto.
+    inv H0. split. auto.
+    destruct (plt t (ThreadPool.next_tid thdp)) as [Hlt|Hn]; auto.
+    exfalso.
+    assert (Hple: Coqlib.Ple (ThreadPool.next_tid thdp) t) by extlia.
+    inversion H as [Htf _ _ _].
+    pose proof (Htf t Hple) as Hnone.
+    congruence.
   }
   destruct H2 as [TIDEQ VALID].
   assert (forall t', t <> t' -> ThreadPool.get_cs thdp t' = ThreadPool.get_cs thdp' t').
@@ -232,7 +237,7 @@ Section simetr.
     lia.
     
     erewrite active_thread_num_dec;eauto.
-    apply Le.le_n_S.
+    apply le_n_S.
     apply IHsw_list.
     inversion H1;subst.
     eapply ThreadPool.pop_inv;eauto.
@@ -378,7 +383,7 @@ Section simetr.
       Sdiverge pc->
       silent_diverge np_step pc.
   Proof.
-    cofix.
+    cofix Hcofix.
     intros. apply Sdiverge_inv in H0;auto. Hsimpl.
     econstructor;eauto.
   Qed.
@@ -400,7 +405,7 @@ Section simetr.
   Proof.
     intros. inversion H;clear H;subst.
     revert pc s' fp' s'' H0 H1 H2.
-    cofix.
+    cofix Hcofix.
     intros.
     inversion H0;subst.
     {
@@ -437,7 +442,7 @@ Section simetr.
     forall pc, Pdiverge pc ->Sdiverge pc.
   Proof.
     inversion 1;subst. clear H.
-    revert pc fp pc' H0 H1. cofix. intros.
+    revert pc fp pc' H0 H1. cofix Hcofix. intros.
 
     inversion H0;subst.
     {
@@ -450,7 +455,7 @@ Section simetr.
   Qed.
   Lemma Pdiverge_exists:
     forall pc, Sdiverge pc->Pdiverge pc.
-  Proof. cofix;inversion 1;subst. econstructor;eauto. econstructor;eauto. Qed.
+  Proof. cofix Hcofix;inversion 1;subst. econstructor;eauto. econstructor;eauto. Qed.
   CoInductive SEtr (pc:@ProgConfig GE) : behav->Prop:=
   | SEtr_done :
       forall fp pc',
@@ -509,7 +514,7 @@ Section simetr.
       SEtr pc b->
       Etr np_step np_abort final_state pc b.
   Proof.    
-    cofix.
+    cofix Hcofix.
     intros.
     inversion H0;subst.
     econstructor;eauto.
@@ -517,7 +522,7 @@ Section simetr.
     econstructor 3;eauto. eapply Sdiverge_sound;eauto.
     
     econstructor. eauto. eauto.
-    eapply SEtr_sound;eauto.
+    eapply Hcofix;eauto.
     pose wdge.
     eapply non_evt_star_thdp_inv in H1;eauto.
     eapply GlobSim.GlobSim.thp_inv_preservation;eauto.
@@ -528,7 +533,7 @@ Section simetr.
       Etr np_step np_abort final_state pc b->
       SEtr pc b.
   Proof.
-    cofix.
+    cofix Hcofix.
     intros.
     inversion H;subst;econstructor;eauto.
     eapply Sdiverge_exists;eauto.

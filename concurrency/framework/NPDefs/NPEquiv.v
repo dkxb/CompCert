@@ -110,6 +110,7 @@ Lemma NPDRF_DRF_Config:
 Proof.
   intros. assert(t=cur_tid pc). inversion H0;auto. subst.
   apply init_property_1_alt in H0 as ?.
+  pose proof H1 as Hsafe_all.
   specialize (H1 (cur_tid pc) H3) as ?.
   unfold npdrfpc in H2. unfold drfpc.
   intro. 
@@ -125,12 +126,14 @@ Proof.
   eapply H2 in H3;eauto. destruct H3;auto.  rewrite pc_cur_tid in H3;auto.
   Hsimpl. apply swstar_l in H5.
   destruct H5. subst. eapply H2 in H3 as [];eauto. rewrite pc_cur_tid in H5;auto.
-  destruct H5. assert(Init.pc_valid_tid pc (cur_tid x)). inversion H5;subst;split;auto.
-  apply H2 in H12 as []. assert(({-|pc,cur_tid x}) = x). inversion H5;auto.
-  rewrite H14 in H13;auto.
+  destruct H5. assert(Hvalid_x: Init.pc_valid_tid pc (cur_tid x)).
+  { inversion H5;subst;split;auto. }
+  apply H2 in Hvalid_x as [Hno_np_race Hno_np_star_race].
+  assert(Heq_x: ({-|pc,cur_tid x}) = x). inversion H5;auto.
+  rewrite Heq_x in Hno_np_star_race;auto.
   split;auto. apply Safe_eq;auto. rewrite pc_cur_tid in H4;auto.
-  intros.
-  apply H1 in H10.
+  intros t0 Hvalid_t0.
+  apply Hsafe_all in Hvalid_t0.
   eapply Safe_eq;eauto.
 Qed.
 

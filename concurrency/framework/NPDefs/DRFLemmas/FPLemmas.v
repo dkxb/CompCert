@@ -3,7 +3,7 @@ Require Import Footprint InteractionSemantics GAST GMemory
 
 Require Import DRF USimDRF NPDRF.
 
-Require Import Classical Wf Arith.
+Require Import Classical Coq.Init.Wf Arith Lia.
 (** This file contains lemmas about footprints used in the proof of semantics equivalence of P and NP*) 
 Lemma tauN_taustar:
   forall i ge (step:@ProgConfig ge->glabel->FP.t->@ProgConfig ge->Prop) pc fp pc',
@@ -365,7 +365,9 @@ Section Loc_FP_Lemmas.
     intros.
     eapply conflict_min_rule in H3 as(pc10&pc11&fp10&fp11&?&?&?&?&?&?&?&?);eauto.
     apply FP.conflict_sym in H8.
-    eapply conflict_min_rule with(pc3:=pc2) in H8 as (pc20&pc21&fp20&fp21&?&?&?&?&?&?&?&?);eauto.
+    eapply conflict_min_rule with (pc1:=pc2) (fp1:=fp2) (pc1':=pc2')
+                                  (pc2:=pc10) (fp2:=fp11) (pc2':=pc11)
+      in H8 as (pc20&pc21&fp20&fp21&?&?&?&?&?&?&?&?);eauto.
     Focus 2.
     rewrite<- FP.fp_union_emp with(fp:=fp11).
     econstructor;eauto. constructor.

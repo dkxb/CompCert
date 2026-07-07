@@ -3,7 +3,7 @@ Require Import Footprint InteractionSemantics GAST GMemory
 
 Require Import DRF USimDRF NPDRF Init FPLemmas PRaceLemmas SmileReorder.
 
-Require Import Classical Wf Arith.
+Require Import Classical Coq.Init.Wf Arith Lia.
 (** This file contains lemmas about reordering under the condition of data-race, used in the equivalence of DRF and NPDRF and also the equivalence of Safe and NPSafe.*)
 Local Notation "'<<' i ',' c ',' sg ',' F '>>'" := {|Core.i := i; Core.c := c; Core.sg := sg; Core.F := F|} (at level 60, right associativity).
 Local Definition pc_valid_tid {ge}:= @GSimDefs.pc_valid_tid ge.
@@ -1312,16 +1312,16 @@ Section CReorder.
       rewrite Heqpc10' in star3'.
       apply changeatombitI_corestar_preserve in star3'.
       simpl in star3'.
-      assert(  (changepc GE ({thread_pool pc10, t, gm pc10, O}) t I) = pc10).
-      unfold changepc.
-      simpl.
-      destruct pc10;f_equal;Coqlib.inv entstep;auto.
-      rewrite H13 in star3';clear H13.
+      assert (PC10_EQ: (changepc GE ({thread_pool pc10, t, gm pc10, O}) t I) = pc10).
+      { unfold changepc.
+        simpl.
+        destruct pc10;f_equal;Coqlib.inv entstep;auto. }
+      rewrite PC10_EQ in star3';clear PC10_EQ.
       apply npnsw_taustar_tid_preservation in star1 as L1.
       simpl in L1.
-      assert(({-|pc1',t}) = pc1').
-      destruct pc1';subst;auto.
-      rewrite H13 in *.
+      assert (PC1_EQ: ({-|pc1',t}) = pc1').
+      { destruct pc1';simpl in *;subst;f_equal;auto. }
+      rewrite PC1_EQ in *.
       left.
       econstructor;eauto.
 
@@ -2882,8 +2882,8 @@ Section CReorder.
         econstructor;eauto. rewrite <- H10,pc_cur_tid. apply tau_plus2star. econstructor;eauto. congruence.
         econstructor. eauto. congruence.
         eapply npnswstar_bit in H9;simpl in *;try congruence.
-        left;intro R;inversion R.
-        rewrite FP.union_comm_eq;apply conflict_union_ano;auto.
+        solve [left; intro R; inversion R].
+        rewrite FP.union_comm_eq; apply conflict_union_ano; auto.
       }
       {
         unfold halfatomblockstep in H9.
@@ -2893,10 +2893,14 @@ Section CReorder.
         apply npnswstep_l2 in H0 as ?. simpl in *. rewrite H13 in H14.
         apply tauN_taustar in H7.
         econstructor. eauto.
-        econstructor;eauto. rewrite <- H12,pc_cur_tid. eapply tau_plus2star;econstructor;eauto.
-        econstructor 2;eauto.
-        left;intro R;inversion R.
-        rewrite FP.union_comm_eq;apply conflict_union_ano;auto.
+        eapply glob_predict0_star_alter with (pc':=pc') (fp:=fp).
+        rewrite <- H12, pc_cur_tid. apply tau_plus2star. constructor; exact H0.
+        auto.
+        auto.
+        eapply glob_predictI_star_alter with
+            (pc1:=x1) (pc2:=x4) (pc3:=x3) (fp1:=x0) (fp2:=x2); eauto.
+        try solve [left; intro R; inversion R].
+        try rewrite FP.union_comm_eq; apply conflict_union_ano; auto.
       }
     }
     assert(atom_bit pc'=O). inversion H1;auto.

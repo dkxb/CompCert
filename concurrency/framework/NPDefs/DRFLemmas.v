@@ -3,7 +3,7 @@ Require Import Footprint InteractionSemantics GAST GMemory
 
 Require Import DRF USimDRF NPDRF.
 
-Require Import Classical Wf Arith.
+Require Import Classical Coq.Init.Wf Arith Lia.
 
 Require Import FPLemmas PRaceLemmas Init SmileReorder ConflictReorder.
 
@@ -106,11 +106,11 @@ Section Complex_reorder.
   Lemma swstar_l2:
     forall pc pc',sw_star (@glob_step GE) pc pc'->cur_valid_id pc'->atom_bit pc = O->glob_step pc sw FP.emp pc'.
   Proof.
-    intros.
-    apply glob_sw_star_bit_preservation in H as L.
-    apply swstar_l1 in H.
-    destruct pc. simpl in *;subst. rewrite H;simpl. rewrite H1.
-    rewrite H in H0;destruct H0;simpl in *.
+    intros pc pc' Hstar Hvalid Hbit.
+    apply glob_sw_star_bit_preservation in Hstar as L.
+    apply swstar_l1 in Hstar.
+    destruct pc. simpl in *;subst. rewrite Hstar;simpl.
+    rewrite Hstar in Hvalid;destruct Hvalid;simpl in *.
     econstructor;eauto.
   Qed.
 
@@ -1446,8 +1446,12 @@ Section Complex_reorder.
         apply type_glob_step_exists in H3 as [].
         apply glob_sw_star_bit_preservation in H0 as L.
         rewrite H1 in L.
-        destruct x8;try(inversion H3;simpl in *;subst;inversion H0;simpl in *;subst;inversion Heqb;fail).
-        right.
+        destruct x8;
+          try solve [
+            inversion H3; subst; simpl in L, Heqb;
+            try rewrite <- L in Heqb; inversion Heqb
+          ].
+        - right.
         assert(x0=FP.emp). inversion H3;auto. subst.
         apply tau_star_tau_N_equiv in H4 as [].
         destruct H8 as (H8&T2).
@@ -1465,7 +1469,8 @@ Section Complex_reorder.
         intro. inversion H6;solv_thread.
         Esimpl;eauto.
         lia.
-        rewrite T2,FP.emp_union_fp;auto.
+          rewrite T2,FP.emp_union_fp;auto.
+        - inversion H3; subst; simpl in Heqb; inversion Heqb.
       }
     Qed.
 
@@ -1792,14 +1797,17 @@ Section Complex_reorder.
               inversion H15;subst;clear H15.
               apply swstar_l in H14.
               destruct H14. subst.
-              eapply npnswstep_predicted_abort in H16;eauto;try congruence.
-              Esimpl;eauto. left;Esimpl;eauto. constructor. congruence.
+              assert (PAbort: predicted_abort1 x).
+              { eapply npnswstep_predicted_abort with (pc':=x9) (fp:=x0); eauto; congruence. }
+              Esimpl;eauto. left. exists 0, nil, FP.emp, x. split.
+              constructor 1. congruence.
+              exact PAbort.
 
               destruct H14.
-              eapply npnswstep_sw_predicted_abort1 in H16;eauto.
+              eapply (npnswstep_sw_predicted_abort1 GE modwdge wdge x x0 x1 x9) in H16;eauto.
               destruct H16.
-              Hsimpl.
-              assert(sw_star glob_step pc ({-|x,x5})).
+	              Hsimpl.
+	              assert(sw_star glob_step pc ({-|x,x5})).
               rewrite H11;simpl. rewrite H11 in H16;simpl in H16.
               econstructor 2;[|constructor].
               destruct pc,H16;simpl in *;subst;econstructor;eauto.
@@ -1826,7 +1834,7 @@ Section Complex_reorder.
               eapply npnswstep_pc_valid_tid_backwards_preservation in H5;eauto.
               rewrite H11 in *;simpl in *.
               econstructor 2;[|constructor].
-              destruct pc,H5;simpl in *;subst. rewrite H1. econstructor;eauto.
+              destruct pc,H5;simpl in *;subst. econstructor;eauto.
             }
             {
               enough(sw_star glob_step pc ({-|x,cur_tid x5})).
@@ -1841,7 +1849,7 @@ Section Complex_reorder.
               eapply npnswstep_pc_valid_tid_backwards_preservation in H5;eauto.
               rewrite H11 in *;simpl in *.
               econstructor 2;[|constructor].
-              destruct pc,H5;simpl in *;subst. rewrite H1. econstructor;eauto.
+              destruct pc,H5;simpl in *;subst. econstructor;eauto.
             }
             {
               enough(sw_star glob_step pc ({-|x,cur_tid x5})).
@@ -1852,7 +1860,7 @@ Section Complex_reorder.
               eapply npnswstep_pc_valid_tid_backwards_preservation in H5;eauto.
               rewrite H11 in *;simpl in *.
               econstructor 2;[|constructor].
-              destruct pc,H5;simpl in *;subst. rewrite H1. econstructor;eauto.
+              destruct pc,H5;simpl in *;subst. econstructor;eauto.
             }
             {
               pose proof H23 as R1.
@@ -1863,7 +1871,7 @@ Section Complex_reorder.
               eapply npnswstep_pc_valid_tid_backwards_preservation in H5;eauto.
               rewrite H11 in *;simpl in *.
               econstructor 2;[|constructor].
-              destruct pc,H5;simpl in *;subst. rewrite H1. econstructor;eauto.
+              destruct pc,H5;simpl in *;subst. econstructor;eauto.
 
               assert(cur_tid x11 = cur_tid x9 \/ cur_tid x11 <> cur_tid x9).
               apply classic.
@@ -1933,7 +1941,7 @@ Section Complex_reorder.
               eapply npnswstep_pc_valid_tid_backwards_preservation in H5;eauto.
               rewrite H11 in *;simpl in *.
               econstructor 2;[|constructor].
-              destruct pc,H5;simpl in *;subst. rewrite H1. econstructor;eauto.
+              destruct pc,H5;simpl in *;subst. econstructor;eauto.
             }
           }
           {
@@ -1941,7 +1949,7 @@ Section Complex_reorder.
             rewrite H14 in H15.
             apply race_changetid with (t:=cur_tid x1) in H15. simpl in H15.
             rewrite pc_cur_tid in H15.
-            eapply npnsw_step_race_glob_predict_star_alter_cons_2 in H15;eauto.
+            eapply (npnsw_step_race_glob_predict_star_alter_cons_2 GE modwdge wdge x x0 x1) in H15;eauto.
             destruct H15;eauto.
             Hsimpl.
             rewrite H11 in H15.
@@ -2077,8 +2085,7 @@ Section Complex_reorder.
                 econstructor 2;[|constructor].
                 assert(pc_valid_tid x1 (cur_tid x5)). inversion H14;split;auto.
                 eapply npnswstep_pc_valid_tid_backwards_preservation in H5;eauto.
-                destruct pc,H5;simpl in *;subst. rewrite H9.
-                econstructor;eauto.
+                destruct pc,H5;simpl in *;subst. econstructor;eauto.
               }
               {
                 eexists;split;eauto.
@@ -2993,7 +3000,7 @@ Section Complex_reorder.
           eapply npnsw_or_sw_stepN_cons in H14;eauto.
           rewrite<- List.app_nil_end in H14.
           rewrite FP.fp_union_emp in H14.
-          assert(x6+0=x6);auto. rewrite H15 in H14;clear H15.
+          replace (x6 + 0) with x6 in H14 by lia.
           
           
           eapply npnsw_or_sw_stepN_evt_ex in H14 as ?;eauto;[|constructor|eapply type_glob_step_elim;eauto].
@@ -4482,10 +4489,10 @@ Section PRace_Proof.
     split.
     intro.
     {
-      revert pc H. cofix.
+      revert pc H. cofix CIH.
       intros.
       econstructor. eapply H. constructor.
-      intros. eapply Safe_eq.
+      intros. eapply CIH.
       eapply safe_succeed;eauto. econstructor 2;eauto. constructor.
     }
     {
@@ -4608,6 +4615,7 @@ Lemma NPDRF_DRF_Config:
 Proof.
   intros. assert(t=cur_tid pc). inversion H0;auto. subst.
   apply init_property_1_alt in H0 as ?.
+  pose proof H1 as Hsafe_all.
   specialize (H1 (cur_tid pc) H3) as ?.
   unfold npdrfpc in H2. unfold drfpc.
   intro. 
@@ -4623,12 +4631,16 @@ Proof.
   eapply H2 in H3;eauto. destruct H3;auto.  rewrite pc_cur_tid in H3;auto.
   Hsimpl. apply swstar_l in H5.
   destruct H5. subst. eapply H2 in H3 as [];eauto. rewrite pc_cur_tid in H5;auto.
-  destruct H5. assert(Init.pc_valid_tid pc (cur_tid x)). inversion H5;subst;split;auto.
-  apply H2 in H12 as []. assert(({-|pc,cur_tid x}) = x). inversion H5;auto.
-  rewrite H14 in H13;auto.
+  destruct H5.
+  assert(Hvalid_cur: Init.pc_valid_tid pc (cur_tid x)).
+  { inversion H5;subst;split;auto. }
+  apply H2 in Hvalid_cur as [_ Hno_star_race].
+  assert(Hx_switch: ({-|pc,cur_tid x}) = x).
+  { inversion H5;auto. }
+  rewrite Hx_switch in Hno_star_race;auto.
   split;auto. apply Safe_eq;auto. rewrite pc_cur_tid in H4;auto.
-  intros.
-  apply H1 in H10.
+  intros t0 Hvalid.
+  apply Hsafe_all in Hvalid.
   eapply Safe_eq;eauto.
 Qed.
    

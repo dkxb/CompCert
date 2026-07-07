@@ -1,6 +1,6 @@
 Require Import Blockset Footprint GMemory Injections InteractionSemantics GlobDefs GAST ETrace NPSemantics GDefLemmas.
 
-Require Import Classical_Prop Arith GSimDefs GlobSim GlobUSim NPDRF Init.
+Require Import Classical_Prop Arith Lia GSimDefs GlobSim GlobUSim NPDRF Init.
 (** This file contains proof of DRF-preservation*)
 Local Notation "{ A , B , C , D }" := {|thread_pool:=A;cur_tid:=B;gm:=C;atom_bit:=D|} (at level 72,right associativity).
 Local Notation "{-| PC , T }" := 
@@ -821,7 +821,7 @@ Local Notation "{-| PC , T }" :=
     apply tau_star_tau_N_equiv in H11 as [].
     eapply GloblUSimulation_tau_N_backwards_progress with(I:=I2) in H11;eauto.
     destruct H11 as [spc'[tpc''[fpS'[fpT''[star3[star4[b3[b4 lfpg2]]]]]]]].
-    eapply GlobUSimulation_tau_N_EntAtom_progress with(I0:=I) in H5;eauto.
+    eapply GlobUSimulation_tau_N_EntAtom_progress with(I:=I) in H5;eauto.
     destruct H5 as [spc1[spce[fpS1[j[S1[S2[S3[S4[S5 S6]]]]]]]]].
     pose proof H9 as H9'.
     apply tau_star_tau_N_equiv in H9.
@@ -1242,11 +1242,13 @@ Lemma GUSim_nprace_preservation_2:
     destruct pc as [thdp t gm bit].
     unfold ThreadPool.valid_tid;split.
     {
-      assert(Coqlib.Plt t thdp.(ThreadPool.next_tid) \/ BinPos.Pge t thdp.(ThreadPool.next_tid)).
+      assert(Coqlib.Plt t thdp.(ThreadPool.next_tid) \/ ~ Coqlib.Plt t thdp.(ThreadPool.next_tid)).
       apply classic.
       destruct H0;auto.
       inversion H as [tp_finite _ _ _].
-      apply tp_finite in H0. simpl in H0.
+      assert (H0': Coqlib.Ple (ThreadPool.next_tid thdp) t).
+      { unfold Coqlib.Plt, Coqlib.Ple in *. lia. }
+      apply tp_finite in H0'. simpl in H0'. clear H0. rename H0' into H0.
       clear tp_finite.
       inversion H_tp_core.
       unfold ThreadPool.get_top in H2.

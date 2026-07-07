@@ -564,7 +564,9 @@ Proof.
   unfold ThreadPool.valid_tid. solv_thread'.
   split; auto.
   intros. edestruct plt; eauto.
-  apply tp_finite in n. destruct H0. congruence.
+  exfalso. destruct H0 as [cs Hcs]. unfold ThreadPool.get_cs in Hcs.
+  assert (Hn: (ThreadPool.next_tid tp <= t)%positive) by (apply Pos.le_nlt; exact n).
+  apply tp_finite in Hn. congruence.
 Qed.
 
 (** Lemmas, TODO: move to somewhere else *)

@@ -3,7 +3,7 @@ Require Import Coqlib AST Values.
 Require Import Blockset Footprint GMemory InteractionSemantics GAST
         GlobDefs ETrace GlobSemantics NPSemantics Injections GDefLemmas. 
 
-Require Import Arith Wf Classical_Prop FunctionalExtensionality.
+Require Import Arith Coq.Init.Wf Classical_Prop FunctionalExtensionality.
 (** This file contains auxiliary definition of non-preemptive semantics used in other proof.*)
 Section typed_step.
     Context {GE:GlobEnv.t}.

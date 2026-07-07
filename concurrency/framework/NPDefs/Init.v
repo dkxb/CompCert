@@ -1,7 +1,7 @@
 Require Import Footprint InteractionSemantics GAST GMemory
         GlobDefs ETrace GlobSemantics GlobSemantics_Lemmas NPSemantics TypedSemantics .
 
-Require Import Classical Wf Arith.
+Require Import Classical Coq.Init.Wf Arith ZArith.
 (** This file contains lemmas for initialization of program configuration. *)
 Local Definition pc_valid_tid {ge}:= @GSimDefs.pc_valid_tid ge.
 Local Notation "{ A , B , C , D }" := {|thread_pool:=A;cur_tid:=B;gm:=C;atom_bit:= D|}(at level 70,right associativity).
@@ -93,7 +93,7 @@ Lemma config_thdp_init_property1:
   Lemma threadpool_spawn_domadd:
     forall ge t mid c sg ,
       let t' :=  @ThreadPool.spawn ge t mid c sg in
-      ThreadPool.next_tid t' = BinPos.Psucc (ThreadPool.next_tid t).
+      ThreadPool.next_tid t' = Pos.succ (ThreadPool.next_tid t).
   Proof.
     intros.
     unfold ThreadPool.spawn in t'.
