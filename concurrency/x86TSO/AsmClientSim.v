@@ -673,23 +673,29 @@ Proof.
       Focus 2.
       {
         assert(t <> t0). auto.
+        pose proof H6 as NO_OTHER_UPD.
         specialize (H6 t H0) as ?. rewrite TSOMemLemmas.tupdate_b_get in H2.
-        assert(b <> Mem.nextblock fm').
+        assert(BNEXT_FM: b <> Mem.nextblock fm').
         intro;contradict H2. Hsimpl.
         econstructor. eapply in_or_app. right. simpl. left;eauto.
         subst. econstructor.
-        rewrite H13 in H7.
-        assert(~obj_mem (strip sfm) b ofs).
-        intro;contradict H5. unfold Mem.alloc in R0;inv R0.
-        inv H8;econstructor;simpl;rewrite PMap.gso;auto.
-        exploit Ic_mem_eq . exact H4. eauto. 
-        intros. intro.
-        eapply H6 in H9. contradict H9.
-        unfold tupdate. ex_match2;auto. 
-        inv H10;econstructor. apply in_or_app. left;eauto. auto.
+        assert (BNEXT: b <> Mem.nextblock sfm) by (rewrite <- H13; auto).
+        assert(NOOBJ_OLD: ~obj_mem (strip sfm) b ofs).
+        intro OBJ;contradict H5. unfold Mem.alloc in R0;inv R0.
+        inv OBJ;econstructor;simpl;rewrite PMap.gso;auto.
+        exploit Ic_mem_eq. exact H4. exact NOOBJ_OLD.
+        { intros t' TNE INBUF.
+          assert (INBUF_UPD:
+                    in_buffer
+                      (tupdate t
+                         (bufs t ++ BufferedAlloc (Mem.nextblock fm') lo hi :: nil)
+                         bufs t') b ofs).
+          { unfold tupdate. ex_match2; auto.
+            inv INBUF; econstructor. apply in_or_app. left; eauto. auto. }
+          eapply NO_OTHER_UPD in INBUF_UPD; eauto. }
         intro.
         eapply eq_on_loc_trans;eauto.
-        revert R0 H7;clear. unfold Mem.alloc;inversion 1;subst.
+        revert R0 BNEXT;clear. unfold Mem.alloc;inversion 1;subst.
         econstructor;FMemLemmas.gmem_unfolds.
         constructor;auto. intros[];congruence.
         rewrite PMap.gso;eauto.
@@ -1319,9 +1325,9 @@ Proof.
       intro. inv H9.
       inv H8. inv H9. 2:inv H8.
       inv H12. unfold Mem.free in H3. ex_match.  inv H3. 
-      inv H0. unfold strip in H11;simpl in H11. specialize (r _ H16) as ?.
-      unfold Mem.perm in H0.
-      rewrite H11 in H0;inv H0.
+      inv H0. unfold strip in H11;simpl in H11. pose proof (r _ H16) as Hr.
+      unfold Mem.perm in Hr.
+      rewrite H11 in Hr;inv Hr.
     }
     Esimpl;eauto.
     inv H;auto.
@@ -1581,6 +1587,16 @@ Proof.
   rewrite TSOMemLemmas.tupdate_same_eq;auto.
 Qed.
 
+Lemma apply_buffer_item_validity_preserve:
+  forall m bi b m',
+    apply_buffer_item bi m = Some m' ->
+    GMem.valid_block m b ->
+    GMem.valid_block m' b.
+Proof.
+  unfold GMem.valid_block; intros.
+  destruct bi; simpl in H; unfold alloc, free, store in H; ex_match2; inv H; simpl; auto.
+Qed.
+
 Local Opaque Mem.load.
 Lemma meminv_client_loc_forward:
   forall sfm tfm bufs t b ofs tgm',
@@ -1619,15 +1635,6 @@ Proof.
       unfold GMem.perm in *;erewrite <- eq_loc_perm;eauto.
       exploit apply_buffer_forward;eauto. simpl. rewrite app_nil_r. eauto.
       simpl. intros[].
-      Lemma apply_buffer_item_validity_preserve:
-        forall m bi b m',
-          apply_buffer_item bi m = Some m'->
-          GMem.valid_block m b ->
-          GMem.valid_block m' b.
-      Proof.
-        unfold GMem.valid_block; intros.
-        destruct bi;simpl in H;unfold alloc,free,store in H;ex_match2;inv H;simpl;auto.
-      Qed.
       assert(GMem.valid_block tm b).
       {
         assert(~ in_buffer (bufs t) b ofs). eauto.
@@ -1693,8 +1700,8 @@ Proof.
   contradict n. eapply meminv_client_loc_forward;eauto.
   enough((GMem.mem_access (strip sm)) !! b ofs Memperm.Cur <> None).
   destruct (strip sm);split;auto. simpl in *. intro.
-  specialize (access_max b ofs) as ?.
-  rewrite H5 in H6. simpl in H6. ex_match2.
+  pose proof (access_max b ofs) as ACCESS_MAX.
+  rewrite H5 in ACCESS_MAX. simpl in ACCESS_MAX. ex_match2.
   unfold Mem.perm in p. unfold strip;simpl;intro.
   rewrite H1 in p;inv p.
 
@@ -1736,8 +1743,8 @@ Proof.
   eapply meminv_client_loc_forward;try exact H;eauto.
   enough((GMem.mem_access (strip sm)) !! b ofs Memperm.Cur <> None).
   destruct (strip sm);split;auto. simpl in *. intro.
-  specialize (access_max b ofs) as ?.
-  rewrite H5 in H6. simpl in H6. ex_match2.
+  pose proof (access_max b ofs) as ACCESS_MAX.
+  rewrite H5 in ACCESS_MAX. simpl in ACCESS_MAX. ex_match2.
   unfold Mem.perm in p. unfold strip;simpl;intro.
   rewrite H4 in p;inv p.
   
@@ -2261,10 +2268,12 @@ Proof.
         specialize (IHtys _ _ A _ Hge0 Halign0 H2). destruct IHtys as (buf_tail & Hstoreargs & Hbuf_tail).
         simpl in Hstoreargs. simpl. rewrite Hstoreargs. eexists. split. simpl. rewrite app_assoc. eauto.
         intros. destruct H. subst bi. do 3 eexists. split. eauto.
-        rewrite Ptrofs.add_zero_l in *. split. destruct (Ptrofs.unsigned_range (Ptrofs.repr z'0)); auto.
+        rewrite Ptrofs.add_zero_l in *. rewrite loadframe.fe_ofs_arg_zero in *; simpl in *.
+        split. destruct (Ptrofs.unsigned_range (Ptrofs.repr z'0)); auto.
         split; auto. simpl. rewrite Ptrofs.unsigned_repr_eq.
         apply Z.add_le_mono. eapply Z.mod_le. lia. pose proof Ptrofs.modulus_pos; lia.
-        subst OFS. apply loadframe.args_len_rec_non_neg in A. replace (Locations.typesize Tint) with 1 by auto. lia.
+        subst OFS. apply loadframe.args_len_rec_non_neg in A.
+        change (4 <= 4 * (1 + z0)). lia.
         
         simpl in H. eapply Hbuf_tail in H.
         subst OFS. replace (Locations.typesize Tint) with 1 by auto. rewrite <- Zred_factor2.
@@ -2279,10 +2288,12 @@ Proof.
         specialize (IHtys _ _ A _ Hge0 Halign0 H2). destruct IHtys as (buf_tail & Hstoreargs & Hbuf_tail).
         simpl in Hstoreargs. simpl. rewrite Hstoreargs. eexists. split. simpl. rewrite app_assoc. eauto.
         intros. destruct H. subst bi. do 3 eexists. split. eauto.
-        rewrite Ptrofs.add_zero_l in *. split. destruct (Ptrofs.unsigned_range (Ptrofs.repr z'0)); auto.
+        rewrite Ptrofs.add_zero_l in *. rewrite loadframe.fe_ofs_arg_zero in *; simpl in *.
+        split. destruct (Ptrofs.unsigned_range (Ptrofs.repr z'0)); auto.
         split; auto. simpl. rewrite Ptrofs.unsigned_repr_eq.
         apply Z.add_le_mono. eapply Z.mod_le. lia. pose proof Ptrofs.modulus_pos; lia.
-        subst OFS. apply loadframe.args_len_rec_non_neg in A. replace (Locations.typesize Tfloat) with 2 by auto. lia.
+        subst OFS. apply loadframe.args_len_rec_non_neg in A.
+        change (8 <= 4 * (2 + z0)). lia.
         
         simpl in H. eapply Hbuf_tail in H.
         subst OFS. replace (Locations.typesize Tfloat) with 2 by auto. rewrite <- Zred_factor4.
@@ -2302,21 +2313,25 @@ Proof.
         repeat rewrite <- app_assoc. eauto.
         intros. simpl in H. destruct H as [H|[H|H]].
         
-        subst bi. do 3 eexists. split. eauto. rewrite Ptrofs.add_zero_l in *.
+        subst bi. do 3 eexists. split. eauto.
+        rewrite Ptrofs.add_zero_l in *. rewrite loadframe.fe_ofs_arg_zero in *; simpl in *.
         split. destruct (Ptrofs.unsigned_range (Ptrofs.repr (z'0 + 4))); auto.
         split; auto. simpl. rewrite Ptrofs.unsigned_repr_eq.
-        subst OFS. replace (Locations.typesize Tlong) with 2 by auto.
-        rewrite <- Zred_factor4, Z.add_assoc. replace (4 * 2) with (4 + 4) by lia.
-        rewrite <- Z.add_assoc. rewrite <-(Z.add_assoc 4 4 (4*z0)). rewrite Z.add_assoc.
-        apply Z.add_le_mono. eapply Z.mod_le. lia. pose proof Ptrofs.modulus_pos; lia.
-        apply loadframe.args_len_rec_non_neg in A. lia.
+        subst OFS. apply loadframe.args_len_rec_non_neg in A.
+        assert ((z'0 + 4) mod Ptrofs.modulus <= z'0 + 4).
+        { eapply Z.mod_le. lia. pose proof Ptrofs.modulus_pos; lia. }
+        change ((z'0 + 4) mod Ptrofs.modulus + 4 <= z'0 + 4 * (2 + z0)).
+        lia.
 
-        subst bi. do 3 eexists. split. eauto. rewrite Ptrofs.add_zero_l in *.
+        subst bi. do 3 eexists. split. eauto.
+        rewrite Ptrofs.add_zero_l in *. rewrite loadframe.fe_ofs_arg_zero in *; simpl in *.
         split. destruct (Ptrofs.unsigned_range (Ptrofs.repr z'0 )); auto.
         split; auto. simpl. rewrite Ptrofs.unsigned_repr_eq.
-        subst OFS. replace (Locations.typesize Tlong) with 2 by auto.
-        apply Z.add_le_mono. eapply Z.mod_le. lia. pose proof Ptrofs.modulus_pos; lia.
-        rewrite <- Zred_factor4. apply loadframe.args_len_rec_non_neg in A. lia.
+        subst OFS. apply loadframe.args_len_rec_non_neg in A.
+        assert (z'0 mod Ptrofs.modulus <= z'0).
+        { eapply Z.mod_le. lia. pose proof Ptrofs.modulus_pos; lia. }
+        change (z'0 mod Ptrofs.modulus + 4 <= z'0 + 4 * (2 + z0)).
+        lia.
         
         simpl in H. eapply Hbuf_tail in H.
         subst OFS. replace (Locations.typesize Tlong) with 2 by auto. rewrite <- Zred_factor4.
@@ -2331,10 +2346,12 @@ Proof.
         specialize (IHtys _ _ A _ Hge0 Halign0 H2). destruct IHtys as (buf_tail & Hstoreargs & Hbuf_tail).
         simpl in Hstoreargs. simpl. rewrite Hstoreargs. eexists. split. simpl. rewrite app_assoc. eauto.
         intros. destruct H. subst bi. do 3 eexists. split. eauto.
-        rewrite Ptrofs.add_zero_l in *. split. destruct (Ptrofs.unsigned_range (Ptrofs.repr z'0)); auto.
+        rewrite Ptrofs.add_zero_l in *. rewrite loadframe.fe_ofs_arg_zero in *; simpl in *.
+        split. destruct (Ptrofs.unsigned_range (Ptrofs.repr z'0)); auto.
         split; auto. simpl. rewrite Ptrofs.unsigned_repr_eq.
         apply Z.add_le_mono. eapply Z.mod_le. lia. pose proof Ptrofs.modulus_pos; lia.
-        subst OFS. apply loadframe.args_len_rec_non_neg in A. replace (Locations.typesize Tsingle) with 1 by auto. lia.
+        subst OFS. apply loadframe.args_len_rec_non_neg in A.
+        change (4 <= 4 * (1 + z0)). lia.
         
         simpl in H. eapply Hbuf_tail in H.
         subst OFS. replace (Locations.typesize Tsingle) with 1 by auto. rewrite <- Zred_factor2.
@@ -2348,10 +2365,12 @@ Proof.
         specialize (IHtys _ _ A _ Hge0 Halign0 H2). destruct IHtys as (buf_tail & Hstoreargs & Hbuf_tail).
         simpl in Hstoreargs. simpl. rewrite Hstoreargs. eexists. split. simpl. rewrite app_assoc. eauto.
         intros. destruct H. subst bi. do 3 eexists. split. eauto.
-        rewrite Ptrofs.add_zero_l in *. split. destruct (Ptrofs.unsigned_range (Ptrofs.repr z'0)); auto.
+        rewrite Ptrofs.add_zero_l in *. rewrite loadframe.fe_ofs_arg_zero in *; simpl in *.
+        split. destruct (Ptrofs.unsigned_range (Ptrofs.repr z'0)); auto.
         split; auto. simpl. rewrite Ptrofs.unsigned_repr_eq.
         apply Z.add_le_mono. eapply Z.mod_le. lia. pose proof Ptrofs.modulus_pos; lia.
-        subst OFS. apply loadframe.args_len_rec_non_neg in A. replace (Locations.typesize Tany32) with 1 by auto. lia.
+        subst OFS. apply loadframe.args_len_rec_non_neg in A.
+        change (4 <= 4 * (1 + z0)). lia.
         
         simpl in H. eapply Hbuf_tail in H.
         subst OFS. replace (Locations.typesize Tany32) with 1 by auto. rewrite <- Zred_factor2.
@@ -2366,10 +2385,12 @@ Proof.
         specialize (IHtys _ _ A _ Hge0 Halign0 H2). destruct IHtys as (buf_tail & Hstoreargs & Hbuf_tail).
         simpl in Hstoreargs. simpl. rewrite Hstoreargs. eexists. split. simpl. rewrite app_assoc. eauto.
         intros. destruct H. subst bi. do 3 eexists. split. eauto.
-        rewrite Ptrofs.add_zero_l in *. split. destruct (Ptrofs.unsigned_range (Ptrofs.repr z'0)); auto.
+        rewrite Ptrofs.add_zero_l in *. rewrite loadframe.fe_ofs_arg_zero in *; simpl in *.
+        split. destruct (Ptrofs.unsigned_range (Ptrofs.repr z'0)); auto.
         split; auto. simpl. rewrite Ptrofs.unsigned_repr_eq.
         apply Z.add_le_mono. eapply Z.mod_le. lia. pose proof Ptrofs.modulus_pos; lia.
-        subst OFS. apply loadframe.args_len_rec_non_neg in A. replace (Locations.typesize Tany64) with 2 by auto. lia.
+        subst OFS. apply loadframe.args_len_rec_non_neg in A.
+        change (8 <= 4 * (2 + z0)). lia.
         
         simpl in H. eapply Hbuf_tail in H.
         subst OFS. replace (Locations.typesize Tany64) with 2 by auto. rewrite <- Zred_factor4.

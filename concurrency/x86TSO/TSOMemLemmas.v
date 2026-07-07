@@ -134,241 +134,10 @@ Lemma PMap_set_same_Mem_eq :
     (snd m) ! p = Some a ->
     PMap.set p a m = m.
 Proof.
-  intros p.
-  induction p; intros; try destruct m; simpls.
-  {
-    destruct t; tryfalse.
-    specialize (IHp a (m, t2)).
-    simpl in IHp.
-    eapply IHp in H.
-    clear - H.
-    unfolds PMap.set.
-    simpls.
-    inversion H; subst.
-    rewrite PTree.set2.
-    eauto.
-  }
-  {
-    destruct t; tryfalse.
-    specialize (IHp a (m, t1)).
-    simpl in IHp.
-    eapply IHp in H.
-    clear - H.
-    unfolds PMap.set.
-    simpls.
-    inversion H; subst.
-    rewrite PTree.set2.
-    eauto.
-  }
-  {
-    destruct t; simpls; tryfalse.
-    subst.
-    eauto.
-  }
-Qed.
-
-Lemma PTree_set_not_leaf :
-  forall A p (a : A) m,
-    PTree.set p a m = PTree.Leaf -> False.
-Proof.
-  intros A p.
-  induction p; intros; simpls; destruct m; tryfalse.
-Qed.
-
-Lemma vl_not_null_not_leaf :
-  forall vl p m,
-    vl <> nil ->
-    snd (Mem.setN vl p m) <> PTree.Leaf.
-Proof.
-  intro vl.
-  induction vl; intros; tryfalse.
-  destruct vl.
-  simpl.
-  intro.
-  destruct m; simpls.
-  eapply PTree_set_not_leaf in H0; tryfalse. 
-  assert (Mem.setN (a :: m0 :: vl) p m =
-          Mem.setN (m0 :: vl) (p + 1)%Z (ZMap.set p a m)).
-  eauto.
-  rewrite H0.
-  assert (m0 :: vl <> nil); intro; tryfalse.
-  eapply IHvl in H1.
-  contradiction H1.
-  eauto.
-Qed.
-
-Lemma vl_set_1_fisrt :
-  forall vl p m a t1 t2 o,
-    (0 < p)%Z -> (snd m) ! 1 = Some a -> 
-    snd (Mem.setN vl p m) = PTree.Node t1 o t2 ->
-    o = Some a.
-Proof.
-  induction vl; intros; tryfalse.
-  {
-    simpls.
-    destruct m; simpls.
-    destruct t; simpls.
-    tryfalse.
-    inversion H1; subst; eauto.
-  }
-  {
-    simpl in H1.
-    eapply IHvl in H1; eauto.
-    lia.
-    clear - H H0.
-    unfold ZMap.set.
-    unfold PMap.set.
-    destruct m; simpls.
-    destruct t; tryfalse.
-    subst.
-    ex_match2.
-    eapply PTree_set_not_leaf in Hx; tryfalse.
-    destruct p; simpls; try lia.
-    inversion Hx; eauto.
-    inversion Hx; eauto.
-  }
-Qed.
-
-Lemma vl_set_p0_get_left :
-  forall vl p1 p m a t1 t2 o,
-    (Z.pos p < p1)%Z -> (snd m) ! (p~0) = Some a -> 
-    snd (Mem.setN vl p1 m) = PTree.Node t1 o t2 ->
-    t1 ! p = Some a.
-Proof.
-  induction vl; intros; tryfalse.
-  {
-    simpls.
-    destruct m; simpls.
-    subst; eauto.
-  }
-  {
-    simpl in H1.
-    eapply IHvl in H1; eauto.
-    lia.
-    clear - H H0. 
-    destruct m; simpls.
-    destruct t; simpls; tryfalse.
-    destruct (PTree.set (ZIndexed.index p1) a (PTree.Node t1 o t2))
-             eqn:?; tryfalse.
-    eapply PTree_set_not_leaf in Heqt; tryfalse.
-    clear - H Heqt H0. 
-    destruct (ZIndexed.index p1) eqn:?; simpls.
-    inversion Heqt; subst; eauto.
-    inversion Heqt; subst; eauto.
-    destruct (PTree.set p0 a t1) eqn:?; tryfalse.
-    eapply PTree_set_not_leaf in Heqt0; tryfalse.
-    inversion Heqt0; subst.
-    rewrite PTree.gso; eauto.
-    intro; subst.
-    clear - H Heqp0.
-    destruct p1; simpls; try lia; tryfalse.
-    inversion Heqp0; subst; try lia.
-    inversion Heqt; subst.
-    eauto.
-  }
-Qed.
-
-Lemma vl_set_p1_get_right :
-  forall vl p1 p m a t1 t2 o,
-    (Z.neg p < p1)%Z -> (snd m) ! (p~1) = Some a -> 
-    snd (Mem.setN vl p1 m) = PTree.Node t1 o t2 ->
-    t2 ! p = Some a.
-Proof.
-  induction vl; intros; tryfalse.
-  {
-    simpls.
-    destruct m; simpls.
-    subst; eauto.
-  }
-  {
-    simpl in H1.
-    eapply IHvl in H1; eauto.
-    lia.
-    clear - H H0. 
-    destruct m; simpls.
-    destruct t; simpls; tryfalse.
-    destruct (PTree.set (ZIndexed.index p1) a (PTree.Node t1 o t2))
-             eqn:?; tryfalse.
-    eapply PTree_set_not_leaf in Heqt; tryfalse.
-    clear - H Heqt H0.  
-    destruct (ZIndexed.index p1) eqn:?; simpls.
-    inversion Heqt; subst; eauto.
-    rewrite PTree.gso; eauto.
-    intro; subst.
-    clear - H Heqp0.
-    destruct p1; simpls; try lia; tryfalse.
-    inversion Heqp0; subst.
-    lia.
-    inversion Heqt; subst; eauto.
-    inversion Heqt; subst; eauto.
-  }
-Qed.
-
-Lemma le_setN_get_same :
-  forall p2 p1 vl a m,
-    (p2 < p1)%Z ->
-    (snd (Mem.setN vl p1 (PMap.set (ZIndexed.index p2) a m)))
-      ! (ZIndexed.index p2) = Some a.
-Proof. 
-  intro p2.
-  induction p2; simpl; intros.
-  {
-    destruct (snd (Mem.setN vl p1 (PMap.set 1 a m))) eqn:Heqe.
-    {
-      destruct vl.
-      simpls.
-      destruct m; simpls.
-      destruct t; simpls; tryfalse.
-      eapply vl_not_null_not_leaf in Heqe; tryfalse.
-      intro; tryfalse.
-    }
-    {
-      destruct vl.
-      simpls.
-      destruct m; simpls.
-      destruct t; simpls; tryfalse.
-      inversion Heqe; eauto.
-      inversion Heqe; eauto.
-      eapply vl_set_1_fisrt; eauto.
-      unfold PMap.set.
-      destruct m; simpls.
-      destruct t; eauto.
-    }
-  }
-  {
-    destruct (snd (Mem.setN vl p1 (PMap.set p~0 a m))) eqn:Heqe.
-    {
-      destruct vl.
-      destruct m; simpls.
-      destruct t; simpls; tryfalse. 
-      eapply vl_not_null_not_leaf in Heqe; tryfalse.
-      intro; tryfalse.
-    }
-    {
-      eapply vl_set_p0_get_left; eauto.
-      destruct m; simpl.
-      destruct t; simpl.
-      rewrite PTree.gss; eauto.
-      rewrite PTree.gss; eauto.
-    }
-  }
-  {
-    destruct (snd (Mem.setN vl p1 (PMap.set p~1 a m))) eqn:Heqe.
-    {
-      destruct vl.
-      destruct m; simpls.
-      destruct t; simpls; tryfalse.
-      eapply vl_not_null_not_leaf in Heqe; tryfalse.
-      intro; tryfalse.
-    }
-    {
-      eapply vl_set_p1_get_right; eauto.
-      destruct m; simpl.
-      destruct t; simpl.
-      rewrite PTree.gss; eauto.
-      rewrite PTree.gss; eauto.
-    }
-  }
+  intros p a [d t] H.
+  unfold PMap.set; simpl.
+  rewrite (@PTree.gsident memval p t a H).
+  reflexivity.
 Qed.
 
 Lemma PTree_set_twice_not_same_reorder_eq :
@@ -376,27 +145,10 @@ Lemma PTree_set_twice_not_same_reorder_eq :
     b <> b' ->
     PTree.set b a (PTree.set b' a' m) = PTree.set b' a' (PTree.set b a m).
 Proof.
-  induction b; induction b'; intros;
-    try solve [simpl; destruct m; simpls; try solve [f_equal; eauto]].
-  {
-    simpl.
-    assert (b <> b').
-    intro.
-    contradiction H.
-    subst; eauto.
-    destruct m; simpls; f_equal; eauto.
-  }
-  {
-    simpl.
-    assert (b <> b').
-    intro.
-    contradiction H.
-    subst; eauto.
-    destruct m; simpls; f_equal; eauto.
-  }
-  {
-    tryfalse.
-  }
+  intros A b b' a a' m Hneq.
+  apply PTree.extensionality; intro i.
+  rewrite !PTree.gsspec.
+  destruct (peq i b); destruct (peq i b'); subst; try congruence; reflexivity.
 Qed.
   
 Lemma PMap_set_twice_not_same_reorder_eq :
@@ -444,18 +196,11 @@ Proof.
   intro vl.
   induction vl; intros; eauto.
   simpl.
-  specialize (IHvl (p+1)%Z (ZMap.set p a m)).
-  rewrite <- IHvl at 2.
-  assert (ZMap.set p a (Mem.setN vl (p + 1) (ZMap.set p a m)) =
-          Mem.setN vl (p + 1) (ZMap.set p a m)).
-  { 
-    unfold ZMap.set.
-    eapply PMap_set_same_Mem_eq; eauto.
-    rewrite le_setN_get_same; eauto.
-    lia.
-  }
-  rewrite H.
-  eauto.
+  rewrite Mem_setN_ZMap_set_g_reorder_eq by lia.
+  rewrite IHvl.
+  rewrite Mem_setN_ZMap_set_g_reorder_eq by lia.
+  rewrite ZMap.set2.
+  reflexivity.
 Qed.
 
 Lemma Mem_setN_same_place_eq_setN_once :
@@ -3841,7 +3586,7 @@ Proof.
   intros.
   unfolds alloc; simpls.
   inversion H; subst; simpls; clear H.
-  rewrite PMap.gss; eauto.
+  rewrite PMap.gss.
   rewrite ZMap.gi; eauto.
 Qed.
 
@@ -3870,7 +3615,7 @@ Proof.
   induction bf; intros; simpls; eauto.
   {
     inversion H; subst; simpls; clear H.
-    rewrite PMap.gss; eauto.
+    rewrite PMap.gss.
     rewrite ZMap.gi; eauto.
   }
   {
