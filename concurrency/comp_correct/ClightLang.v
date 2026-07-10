@@ -751,7 +751,8 @@ Definition after_external (c: core) (rv: option val) : option core :=
 	      match rv, sig_res sig with
 	        Some v, Xvoid => None
 	      | Some v, ty =>
-	        if val_has_type_func v (proj_xtype ty) then  Some(Core_Returnstate v k)
+	        if val_has_rettype_func v ty
+          then Some(Core_Returnstate v k)
 	        else None
 	      | None, Xvoid  => Some(Core_Returnstate Vundef k)
 	      | None, _ => None

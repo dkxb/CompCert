@@ -3,6 +3,8 @@ Require Import Blockset Footprint FMemOpFP GMemory FMemory FMemPerm FMemLemmas M
 
 Require Import AsmLocalize Clight ClightLang Clight_local ClightWD.
 
+Set Nested Proofs Allowed.
+
 Lemma init_genv_iff: forall cu ge G,
     ClightLang.init_genv cu ge G <->
     G =  {| Clight.genv_genv := ge; Clight.genv_cenv := cu_comp_env cu |} /\ ge_related ge (Genv.globalenv (mkprogram (cu_defs cu) (cu_public cu) 1%positive)).
@@ -293,7 +295,7 @@ Section SEM_EXPR.
     destruct (peq b b0);auto.
     inv NOREP.
     assert((Pos.to_nat b - Pos.to_nat bound)%nat <> (Pos.to_nat b0 - Pos.to_nat bound)%nat).
-    xomega.
+    extlia.
     apply H in H0. contradiction.
   Qed.
   
@@ -734,7 +736,7 @@ Section SEM_EXPR.
       deref_loc ty fm loc ofs v ->
       forall loc' ofs',
         val_related j' (Vptr loc' ofs')(Vptr loc ofs) ->
-        exists v', Clight.deref_loc ty m loc' ofs' v' /\ val_related j' v' v.
+        exists v', Clight.deref_loc ty m loc' ofs' Full v' /\ val_related j' v' v.
   Proof.
     inversion 1;subst;intros.
     exploit loadv_related;eauto;intro;simpl in *.
@@ -790,7 +792,7 @@ Section SEM_EXPR.
     (forall a b ofs,
         ClightLang.eval_lvalue sge e le fm a b ofs ->
         exists b' ofs',
-          Clight.eval_lvalue tge e' le' m a b' ofs' /\
+          Clight.eval_lvalue tge e' le' m a b' ofs' Full /\
           val_related j' (Vptr b' ofs')(Vptr b ofs)).
   Proof.
     apply eval_expr_lvalue_ind;intros.
@@ -843,7 +845,7 @@ Section SEM_EXPR.
       specialize (ENVREL id).
       rewrite H in *.
       inv ENVREL.
-      eapply Localize.ge_match_strict_senv with(id0:=id) in GEMATCH as ?.
+      eapply Localize.ge_match_strict_senv with(id:=id) in GEMATCH as ?.
       inv H1;inv_eq.
       
       
@@ -868,8 +870,12 @@ Section SEM_EXPR.
     }
     {
       inv H3.
+      inv H4.
       rewrite GEQ in *.
-      Esimpl;econstructor;eauto.
+      exists b, (Ptrofs.add ofs (Ptrofs.repr delta)).
+      split.
+      econstructor 5;eauto.
+      constructor;eauto.
     }
   Qed.
 
@@ -886,7 +892,7 @@ Section SEM_EXPR.
     forall a b ofs,
       ClightLang.eval_lvalue sge e le fm a b ofs ->
       exists b' ofs',
-        Clight.eval_lvalue tge e' le' m a b' ofs' /\
+        Clight.eval_lvalue tge e' le' m a b' ofs' Full /\
         val_related j' (Vptr b' ofs')(Vptr b ofs).
   Proof. pose (proj2 eval_expr_lvalue_localize). auto. Qed.
 
@@ -895,7 +901,7 @@ Section SEM_EXPR.
       ClightLang.deref_loc_fp ty loc ofs fp->
       forall loc' ofs',
         val_related j' (Vptr loc' ofs')(Vptr loc ofs)->
-        exists fp', Clight_local.deref_loc_fp ty loc' ofs' fp' /\ FPlocalize j' fp fp'.
+        exists fp', Clight_local.deref_loc_fp ty loc' ofs' Full fp' /\ FPlocalize j' fp fp'.
   Proof.
     assert(INJ:Bset.inj_inject j').
     unfold Bset.inj_inject. apply injective_j'.
@@ -1058,7 +1064,7 @@ Section SEM_EXPR.
       forall ty fm',
         ClightLang.assign_loc sge ty fm loc ofs v fm'->
         exists m',
-          Clight.assign_loc tge ty m loc' ofs' v' m' /\ mem_related j bound fl (strip fm') m'.
+          Clight.assign_loc tge ty m loc' ofs' Full v' m' /\ mem_related j bound fl (strip fm') m'.
   Proof.
     intros.
     inv H1. 
@@ -1573,6 +1579,29 @@ Inductive match_core (j: Bset.inj) : core -> core -> Prop :=
       val_related j res1 res2 ->
       match_core j (Core_Returnstate res1 k1)
                  (Core_Returnstate res2 k2).
+
+Lemma arg_related_construct_inj_val_related:
+  forall j bd fl0 m lm v v',
+    mem_related j bd fl0 m lm ->
+    arg_related j v v' ->
+    val_related (construct_inj j bd fl0) v v'.
+Proof.
+  intros j0 bd fl0 m lm v v' MEMREL0 ARGREL.
+  apply val_related_val_inject_strict.
+  unfold arg_related in ARGREL.
+  inv ARGREL; try solve [apply inject_int | apply inject_long | apply inject_float | apply inject_single | apply val_inject_undef].
+  match goal with
+  | H: Bset.inj_to_meminj j0 b1 = Some (b2, _) |- _ =>
+      unfold Bset.inj_to_meminj in H; ex_match; inv H
+  end.
+  assert (CJ: construct_inj j0 bd fl0 b1 = Some b2).
+  { eapply mem_related_inj_construct_inj; eauto. }
+  refine (@inject_ptr (Bset.inj_to_meminj (construct_inj j0 bd fl0))
+                      b1 ofs1 b2 (Ptrofs.add ofs1 (Ptrofs.repr 0)) 0 _ _).
+  - unfold Bset.inj_to_meminj. rewrite CJ. eauto.
+  - rewrite Ptrofs.add_zero. auto.
+Qed.
+
 Lemma freelist_fleq:
   forall l m m',
     Mem.free_list m l = Some m'->
@@ -1640,12 +1669,12 @@ Proof.
     simpl. rewrite H1. clear H1. rewrite FINDDEF. 
     destruct g; [|discriminate]. inversion FINDDEF; subst f0; clear FINDDEF. destruct f; [|discriminate].
     destruct (type_of_function f) eqn: TYPF;try discriminate.
-    destruct ( val_casted_list_func args t && tys_nonvoid t && vals_defined args &&
-                                    zlt (4 * (2 * Zlength args)) Int.max_unsigned) eqn:WDARGS;try discriminate.
-    assert(  val_casted_list_func args_local t && tys_nonvoid t && vals_defined args_local &&
-                                  zlt (4 * (2 * Zlength args_local)) Int.max_unsigned = true).
-    {
-      generalize t INJARGS WDARGS. clear.
+	    destruct ( val_casted_list_func args l && tys_nonvoid l && vals_defined args &&
+	                                    zlt (4 * (2 * Zlength args)) Int.max_unsigned) eqn:WDARGS;try discriminate.
+	    assert(  val_casted_list_func args_local l && tys_nonvoid l && vals_defined args_local &&
+	                                  zlt (4 * (2 * Zlength args_local)) Int.max_unsigned = true).
+	    {
+	      generalize l INJARGS WDARGS. clear.
       intros until 1.
       intro. apply andb_true_iff in WDARGS. destruct WDARGS.
       apply andb_true_iff in H. destruct H.
@@ -1653,10 +1682,10 @@ Proof.
       repeat (apply andb_true_iff;split;auto).
       (* *)
       clear H1 H0 H2.
-      revert t H . induction INJARGS; intros. 
-      destruct t. auto. inversion H. destruct t; simpl in *; auto.
+	      revert l H . induction INJARGS; intros. 
+	      destruct l. auto. inversion H. destruct l; simpl in *; auto.
       apply andb_true_iff in H0. destruct H0.
-      apply andb_true_iff; split; auto. inv H; destruct t; auto.
+	      apply andb_true_iff; split; auto. inv H; destruct l; auto.
       (* *)
       clear H H0. induction INJARGS; auto. simpl. inv H; auto.
       (* *)
@@ -2005,20 +2034,25 @@ Proof.
     destruct fd; try discriminate.
     destruct e; try discriminate.
     destruct lores, ores; simpl in *; try contradiction.
-    { destruct (sig_res sg) as [ty|];
-        [destruct (val_has_type_func v ty) eqn:TYPE, (val_has_type_func v0 ty) eqn:TYPE'
-        |]; try discriminate.
-      eexists. split. eauto. exists fm. repeat (split; auto). inv AFTEXT. constructor; auto.
-      inv RESREL;auto.
-      unfold Bset.inj_to_meminj in H1.
-      ex_match. inv H1.
-      rewrite Ptrofs.add_zero. econstructor;eauto.
-      eapply mem_related_inj_construct_inj;eauto.
-      
-      exfalso. inv RESREL;unfold val_has_type_func in *; ex_match.
+    { destruct (sig_res sg) eqn:SIG; simpl in AFTEXT; try discriminate;
+        (assert (TYPE': val_has_type_func v0 (proj_sig_res sg) = true)
+          by (unfold proj_sig_res; rewrite SIG; simpl;
+              match goal with
+              | |- ?T = true => destruct T eqn:TYPE'; auto; discriminate
+              end);
+         assert (TYPE: val_has_type_func v (proj_sig_res sg) = true)
+           by (eapply arg_related_val_has_type_func'; eauto);
+         eexists; split;
+         [ simpl; unfold proj_sig_res in TYPE; rewrite SIG in TYPE; simpl in TYPE; rewrite TYPE; eauto
+         | exists fm; repeat (split; auto);
+           simpl in AFTEXT;
+           unfold proj_sig_res in TYPE'; rewrite SIG in TYPE'; simpl in TYPE';
+           rewrite TYPE' in AFTEXT; inv AFTEXT; constructor; auto;
+           eapply arg_related_construct_inj_val_related; eauto ]).
     }
-    { destruct (sig_res sg) as [ty|]; try discriminate.
-      eexists. split. eauto. exists fm. repeat (split; auto). inv AFTEXT. constructor; auto.
+    { destruct (sig_res sg) eqn:SIG; simpl in AFTEXT; try discriminate.
+      eexists. split. simpl. eauto.
+      exists fm. repeat (split; auto). inv AFTEXT. constructor; auto.
     }
   }
   {
@@ -2065,6 +2099,3 @@ Proof.
   Unshelve.
   apply 0.
 Qed.
-
-
-

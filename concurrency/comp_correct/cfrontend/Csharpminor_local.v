@@ -290,7 +290,7 @@ Definition init_mem := @init_mem_generic fundef unit.
 Definition fundef_init (cfd: fundef) (args: list val) : option core :=
   match cfd with
   | Internal fd =>
-    if val_has_type_list_func args (sig_args (funsig cfd))
+	    if val_has_type_list_func args (proj_sig_args (funsig cfd))
                               && vals_defined args
                               && zlt (4*(2*(Zlength args))) Int.max_unsigned
     then Some (Core_Callstate cfd args Kstop)
@@ -326,14 +326,14 @@ Definition after_external (c: core) (vret: option val) : option core :=
     Core_Callstate fd args k =>
     match fd with
     | External (EF_external _ sg)
-      => match vret, sig_res sg with
-	          None, Xvoid => Some (Core_Returnstate Vundef k)
-	        | Some v, Xvoid => None
-	        | Some v, ty =>
-	          if val_has_type_func v (proj_xtype ty)
-          then Some (Core_Returnstate v k)
-          else None
-	        | None, _ => None
+        => match vret, sig_res sg with
+            None, Xvoid => Some (Core_Returnstate Vundef k)
+        | Some v, Xvoid => None
+        | Some v, ty =>
+            if val_has_type_func v (proj_xtype ty)
+            then Some (Core_Returnstate v k)
+            else None
+        | None, _ => None
         end
     | _ => None
     end

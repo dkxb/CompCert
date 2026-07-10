@@ -1177,7 +1177,7 @@ Proof.
     destruct f; try discriminate. 
     assert (exists tfd, tf = Internal tfd)  as [tfd INTERNAL] by (monadInv MATCHF; eauto). subst tf.
     unfold fundef_init. erewrite sig_function_translated;[|eexists; eauto].
-    destruct (wd_args args (sig_args (Cminor.funsig (Internal f)))) eqn: WDARGS; [|discriminate].
+    destruct (wd_args args (proj_sig_args (Cminor.funsig (Internal f)))) eqn: WDARGS; [|discriminate].
     erewrite wd_args_inject; eauto. eexists. split. eauto.
     intros sm0 tm0 INITSM INITTM MEMINITINJ sm tm [HRELY LRELY MINJ]. exists 0%nat. inv INITCORE.
     (** This could be a general purposed lemma... *)

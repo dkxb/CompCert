@@ -25,9 +25,9 @@ Lemma eq_valid_eq_nextblock:
 Proof.
   intros. unfold Mem.valid_block in H.
   destruct (plt (Mem.nextblock m) (Mem.nextblock m')).
-  specialize (H (Mem.nextblock m)). xomega.
+  specialize (H (Mem.nextblock m)). extlia.
   rewrite <- Pos.le_nlt, Pos.lt_eq_cases in n. destruct n; auto.
-  specialize (H (Mem.nextblock m')). xomega.
+  specialize (H (Mem.nextblock m')). extlia.
 Qed.
 
 Lemma mem_access_default:
@@ -35,8 +35,8 @@ Lemma mem_access_default:
 Proof.
   intros. exploit (pmap_finite_sound_c _ (Mem.mem_access m)).
   instantiate (1:= Pos.max (pmap_finite_c _ (Mem.mem_access m)) (Mem.nextblock m)).
-  xomega. intro.
-  rewrite <- H. exploit Mem.nextblock_noaccess; eauto. xomega.
+  extlia. intro.
+  rewrite <- H. exploit Mem.nextblock_noaccess; eauto. extlia.
 Qed.
 
 
@@ -103,9 +103,9 @@ Proof.
     intros B; pattern B. apply Pos.peano_rect; intros.
     (* base *)
     exists (fun b => None). intros.
-    split; intros. xomega. inv H0.
+    split; intros. lia. inv H0.
     (* inductive *)
-    exploit H. xomega. intros (j'0 & JJ' & J'J). clear H.
+    exploit H. lia. intros (j'0 & JJ' & J'J). clear H.
     destruct (j p) as [p_img|] eqn:INJp.
     (* p in bs *)
     exists (fun b' => if peq b' p_img then Some p else j'0 b').
@@ -117,14 +117,14 @@ Proof.
     (*  b <> p *)
     exploit JJ'; eauto.
     destruct (peq b p). exfalso. apply n. subst. rewrite H1 in INJp. inv INJp; auto.
-    xomega.
+    lia.
     (* J' <- J *)
     destruct peq. inv H. auto. eauto.
     (* p not in bs *)
     exists j'0. split; auto. intros. destruct (peq b p). subst. rewrite INJp in H1; inv H1.
-    apply JJ'; auto. xomega.
+    apply JJ'; auto. lia.
   }
-  exploit (REC bound). xomega. intros (j' & Hj'1 & Hj'2).
+  exploit (REC bound). lia. intros (j' & Hj'1 & Hj'2).
   exists j'. split.
   inv INJECT. inv inj_weak.
   constructor; intros. constructor; intros.
@@ -156,11 +156,11 @@ Proof.
     intros B; pattern B. apply Pos.peano_rect; intros.
     (* base *)
     exists (fun b => None). intros.
-    split; intros. xomega. inv H0.
+    split; intros. lia. inv H0.
     (* inductive *)
-    exploit (Bset.inj_dom _ _ _ INJECT p). subst bs. unfold Bset.belongsto. xomega.
+    exploit (Bset.inj_dom _ _ _ INJECT p). subst bs. unfold Bset.belongsto. extlia.
     intros (p_img & INJ_p).
-    exploit H. xomega. intros (j'_0 & Hj'_0).
+    exploit H. lia. intros (j'_0 & Hj'_0).
     exists (fun b => if peq b p_img then Some p else j'_0 b).
     split; intros.
     destruct (peq b p).
@@ -171,18 +171,18 @@ Proof.
     { split; [intro C | contradiction]. inv INJECT.
       pose proof (Bset.inj_injective _ _ _ inj_weak _ _ _ INJ_p C). subst b. contradiction. }
     destruct peq; subst. apply H3 in H2. contradiction.
-    destruct Hj'_0. apply H4. xomega. auto.
+    destruct Hj'_0. apply H4. lia. auto.
 
     destruct peq; subst. inv H1. auto.
     destruct Hj'_0. apply H3. auto.
   }
-  exploit (REC bound). xomega. intros (j' & Hj'1 & Hj'2).
+  exploit (REC bound). lia. intros (j' & Hj'1 & Hj'2).
   exists j'. split.
   inv INJECT. inv inj_weak.
   constructor; intros. constructor; intros.
   apply Hj'2 in H. eapply inj_range'; eauto.
   apply inj_dom in H. destruct H as [b H]. exists b. apply Hj'1; auto. apply inj_dom' in H.
-  unfold Bset.belongsto in H. subst bs. xomega.
+  unfold Bset.belongsto in H. subst bs. extlia.
   apply Hj'2 in H. eapply inj_dom'. eauto.
   apply Hj'2 in H. apply Hj'2 in H0. rewrite H in H0. inv H0; auto.
   destruct (inj_range _ H) as [b' H']. exists b'. apply Hj'1; auto. eapply inj_dom'. eauto.
@@ -300,8 +300,8 @@ Program Definition inject_content_c (j j': Bset.inj) (bound: block)
     (Pos.max (pmap_finite_c _ original_content) bound)
     (fst original_content) _.
 Next Obligation.
-  unfold inject_content. destruct plt. xomega.
-  exploit pmap_finite_sound_c; eauto. xomega.
+  unfold inject_content. destruct plt. extlia.
+  exploit pmap_finite_sound_c; eauto. extlia.
 Qed.
 
 
@@ -324,7 +324,7 @@ Program Definition update_access_c (j: Bset.inj) (bound: block)
   pmap_construct_c _ (update_access_func j bound m2 m1')
                    (Pos.max (pmap_finite_c _ m2) bound) (fst m2) _.
 Next Obligation.
-  unfold update_access_func. destruct plt; [|exploit pmap_finite_sound_c; eauto]; xomega.
+  unfold update_access_func. destruct plt; [extlia|exploit pmap_finite_sound_c; eauto; extlia].
 Qed.
 
 Program Definition update_memory (j21 j12: Bset.inj) (bound: block)
@@ -342,7 +342,7 @@ Qed.
 Next Obligation.
   pose proof (proj2_sig (update_access_c j21 bound (Mem.mem_access m2) (Mem.mem_access m1'))).
   simpl in H0. destruct H0. rewrite H1. unfold update_access_func.
-  destruct plt;[xomega|]. apply Mem.nextblock_noaccess; xomega.
+  destruct plt;[extlia|]. apply Mem.nextblock_noaccess; extlia.
 Qed.
 Next Obligation.
   pose proof (proj2_sig (inject_content_c j21 j12 bound (Mem.mem_contents m2) (Mem.mem_contents m1'))).

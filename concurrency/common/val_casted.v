@@ -184,6 +184,68 @@ destruct t; auto. inversion 1. inversion 1. inversion 1.
 destruct t; auto; inversion 1.
 Qed.
 
+Definition val_has_rettype_func (v : val) (t : xtype) : bool :=
+  match v with
+  | Vundef => true
+  | Vint n =>
+      match t with
+      | Xbool => Int.eq n Int.zero || Int.eq n Int.one
+      | Xint8signed => Int.eq (Int.sign_ext 8 n) n
+      | Xint8unsigned => Int.eq (Int.zero_ext 8 n) n
+      | Xint16signed => Int.eq (Int.sign_ext 16 n) n
+      | Xint16unsigned => Int.eq (Int.zero_ext 16 n) n
+      | Xint => true
+      | Xptr => negb Archi.ptr64
+      | Xany32 | Xany64 => true
+      | _ => false
+      end
+  | Vlong _ =>
+      match t with
+      | Xlong => true
+      | Xptr => Archi.ptr64
+      | Xany64 => true
+      | _ => false
+      end
+  | Vfloat _ =>
+      match t with
+      | Xfloat | Xany64 => true
+      | _ => false
+      end
+  | Vsingle _ =>
+      match t with
+      | Xsingle | Xany32 | Xany64 => true
+      | _ => false
+      end
+  | Vptr _ _ =>
+      match t with
+      | Xint => negb Archi.ptr64
+      | Xlong => Archi.ptr64
+      | Xptr => true
+      | Xany32 => negb Archi.ptr64
+      | Xany64 => true
+      | _ => false
+      end
+  end.
+
+Lemma int_eq_true_iff:
+  forall x y, Int.eq x y = true <-> x = y.
+Proof.
+  intros x y. split; intro H.
+  - generalize (Int.eq_spec x y). rewrite H. auto.
+  - subst. apply Int.eq_true.
+Qed.
+
+Lemma val_has_rettype_funcP v t :
+  Val.has_rettype v t <-> val_has_rettype_func v t = true.
+Proof.
+  unfold Val.has_rettype, val_has_rettype_func.
+  destruct v; destruct t; simpl;
+  try rewrite Bool.orb_true_iff;
+  try rewrite !int_eq_true_iff;
+  try destruct Archi.ptr64;
+  split; intros; auto; try tauto; try contradiction; try discriminate.
+Qed.
+
 Fixpoint val_has_type_list_func (vl : list val) (tyl : list typ) : bool :=
   match vl, tyl with
     | nil, nil => true

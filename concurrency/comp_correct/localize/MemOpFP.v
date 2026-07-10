@@ -167,7 +167,6 @@ Proof.
   unfold Ptrofs.add in H1.
   do 2 rewrite Ptrofs.unsigned_repr in H1; auto; try rewrite Ptrofs.unsigned_repr; destruct ofs; simpl in *; try lia. 
   intuition.
-  lia.
 Qed.
 
 Local Hint Resolve loadbytes_fp_loc loadbytes_inj_fp_mapped.
@@ -200,7 +199,6 @@ Proof.
   apply range_locset_loc. 
   do 2 rewrite Ptrofs.unsigned_repr in H0; auto; try rewrite Ptrofs.unsigned_repr; try lia.
   do 2 rewrite Ptrofs.unsigned_repr in H; auto; try rewrite Ptrofs.unsigned_repr; try lia.
-  intuition.
 Qed.
 
 Local Hint Resolve storebytes_fp_loc storebytes_inj_fp_mapped.

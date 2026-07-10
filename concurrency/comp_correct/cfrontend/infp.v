@@ -175,7 +175,7 @@ Proof.
       all: destruct (Mem.valid_pointer m b (Ptrofs.unsigned ofs1)) eqn:?;simpl;unfold FMemOpFP.range_locset,Locs.belongsto;destruct eq_block eqn:?;try contradiction;auto.
       - apply andb_true_iff in H5 as [];apply andb_true_iff;split;auto.
         destruct zle;try discriminate.
-        assert(Ptrofs.unsigned ofs1 -1 <= ofs). OmegaPlugin.lia.
+        assert(Ptrofs.unsigned ofs1 -1 <= ofs). lia.
         destruct zle;auto.
         assert(Ptrofs.unsigned ofs1+1 = Ptrofs.unsigned ofs1 -1 +2). lia.
         rewrite <-H5;auto.
@@ -201,7 +201,7 @@ Proof.
     apply andb_true_iff in H2 as [].
     split.
     destruct zle;try discriminate.
-    assert(Ptrofs.unsigned ofs1 -1 <= ofs). OmegaPlugin.lia.
+    assert(Ptrofs.unsigned ofs1 -1 <= ofs). lia.
     destruct zle;auto.
     assert(Ptrofs.unsigned ofs1+1 = Ptrofs.unsigned ofs1 -1 +2). lia.
     rewrite <-H2;auto.

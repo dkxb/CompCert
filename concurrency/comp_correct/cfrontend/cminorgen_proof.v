@@ -335,7 +335,7 @@ Lemma match_env_external_call:
 Proof.
   intros. apply match_env_invariant with f1; auto.
   intros. eapply inject_incr_separated_same'; eauto.
-  intros. eapply inject_incr_separated_same; eauto. red. destruct H. xomega.
+  intros. eapply inject_incr_separated_same; eauto. red. destruct H. extlia.
 Qed.
 
 (** [match_env] and allocations *)
@@ -365,18 +365,18 @@ Proof.
   constructor; eauto.
   constructor.
 (* low-high *)
-  rewrite NEXTBLOCK; xomega.
+  rewrite NEXTBLOCK; extlia.
 (* bounded *)
   intros. rewrite PTree.gsspec in H. destruct (peq id0 id).
-  inv H. rewrite NEXTBLOCK; xomega.
-  exploit me_bounded0; eauto. rewrite NEXTBLOCK; xomega.
+  inv H. rewrite NEXTBLOCK; extlia.
+  exploit me_bounded0; eauto. rewrite NEXTBLOCK; extlia.
 (* inv *)
   intros. destruct (eq_block b (Mem.nextblock m1)).
   subst b. rewrite SAME in H; inv H. exists id; exists sz. apply PTree.gss.
   rewrite OTHER in H; auto. exploit me_inv0; eauto.
   intros [id1 [sz1 EQ]]. exists id1; exists sz1. rewrite PTree.gso; auto. congruence.
 (* incr *)
-  intros. rewrite OTHER in H. eauto. unfold block in *; xomega.
+  intros. rewrite OTHER in H. eauto. unfold block in *; extlia.
 Qed.
 
 (** The sizes of blocks appearing in [e] are respected. *)
@@ -572,23 +572,23 @@ Proof.
   (* base case *)
   econstructor; eauto.
   inv H. constructor; intros; eauto.
-  eapply IMAGE; eauto. eapply H6; eauto. xomega.
+  eapply IMAGE; eauto. eapply H6; eauto. extlia.
   (* inductive case *)
   assert (Ple lo hi) by (eapply me_low_high; eauto).
   econstructor; eauto.
   eapply match_temps_invariant; eauto.
   eapply match_env_invariant; eauto.
-    intros. apply H3. xomega.
+    intros. apply H3. extlia.
   eapply match_bounds_invariant; eauto.
     intros. eapply H1; eauto.
-    exploit me_bounded; eauto. xomega.
+    exploit me_bounded; eauto. extlia.
   eapply padding_freeable_invariant; eauto.
-    intros. apply H3. xomega.
+    intros. apply H3. extlia.
   eapply IHmatch_callstack; eauto.
-    intros. eapply H1; eauto. xomega.
-    intros. eapply H2; eauto. xomega.
-    intros. eapply H3; eauto. xomega.
-    intros. eapply H4; eauto. xomega.
+    intros. eapply H1; eauto. extlia.
+    intros. eapply H2; eauto. extlia.
+    intros. eapply H3; eauto. extlia.
+    intros. eapply H4; eauto. extlia.
 Qed.
 
 Lemma match_callstack_incr_bound:
@@ -598,8 +598,8 @@ Lemma match_callstack_incr_bound:
   match_callstack f m tm cs bound' tbound'.
 Proof.
   intros. inv H.
-  econstructor; eauto. xomega. xomega.
-  constructor; auto. xomega. xomega.
+  econstructor; eauto. extlia. extlia.
+  constructor; auto. extlia. extlia.
 Qed.
 
 (** Assigning a temporary variable. *)
@@ -664,10 +664,10 @@ Proof.
   assert(R:match_callstack f m' tm' cs (Mem.nextblock m') (Mem.nextblock tm') /\ Mem.inject f m' tm').
   split;auto.
   rewrite NEXT; rewrite NEXT'.
-  apply match_callstack_incr_bound with lo sp; try lia.
+  apply match_callstack_incr_bound with lo sp; try extlia.
   apply match_callstack_invariant with f m tm; auto.
   intros. eapply perm_freelist; eauto.
-  intros. eapply Mem.perm_free_1; eauto. left; unfold block; xomega. xomega. xomega.
+  intros. eapply Mem.perm_free_1; eauto. left; unfold block; extlia.
   eapply Mem.free_inject; eauto.
   intros. exploit me_inv0; eauto. intros [id [sz A]].
   exists 0; exists sz; split.
@@ -700,21 +700,21 @@ Proof.
   inv H. constructor; auto.
   intros.  case_eq (f1 b1).
   intros [b2' delta'] EQ. rewrite (INCR _ _ _ EQ) in H. inv H. eauto.
-  intro EQ. exploit SEPARATED; eauto. intros [A B]. elim B. red. xomega.
+  intro EQ. exploit SEPARATED; eauto. intros [A B]. elim B. red. extlia.
 (* inductive case *)
   constructor. auto. auto.
   eapply match_temps_invariant; eauto.
   eapply match_env_invariant; eauto.
   red in SEPARATED. intros. destruct (f1 b) as [[b' delta']|] eqn:?.
   exploit INCR; eauto. congruence.
-  exploit SEPARATED; eauto. intros [A B]. elim B. red. xomega.
+  exploit SEPARATED; eauto. intros [A B]. elim B. red. extlia.
   intros. assert (Ple lo hi) by (eapply me_low_high; eauto).
   destruct (f1 b) as [[b' delta']|] eqn:?.
   apply INCR; auto.
   destruct (f2 b) as [[b' delta']|] eqn:?; auto.
-  exploit SEPARATED; eauto. intros [A B]. elim A. red. xomega.
+  exploit SEPARATED; eauto. intros [A B]. elim A. red. extlia.
   eapply match_bounds_invariant; eauto.
-  intros. eapply MAXPERMS; eauto. red. exploit me_bounded; eauto. xomega.
+  intros. eapply MAXPERMS; eauto. red. exploit me_bounded; eauto. extlia.
   (* padding-freeable *)
   red; intros.
   destruct (is_reachable_from_env_dec f1 e sp ofs).
@@ -727,7 +727,7 @@ Proof.
   apply is_reachable_intro with id b0 lv delta; auto; lia.
   eauto with mem.
   (* induction *)
-  eapply IHmatch_callstack; eauto. inv MENV; xomega. xomega.  xomega.  
+  eapply IHmatch_callstack; eauto. inv MENV; extlia. extlia. extlia.  
 Qed.
 
 (** [match_callstack] and allocations *)
@@ -747,12 +747,12 @@ Proof.
   exploit Mem.nextblock_alloc; eauto. intros NEXTBLOCK.
   exploit Mem.alloc_result; eauto. intros RES.
   constructor.
-  xomega.
-  unfold block in *; xomega.
+  extlia.
+  unfold block in *; extlia.
   auto.
   constructor; intros.
     rewrite H3. rewrite PTree.gempty. constructor.
-    xomega.
+	    extlia.
     rewrite PTree.gempty in H4; discriminate.
     eelim Mem.fresh_block_alloc; eauto. eapply Mem.valid_block_inject_2; eauto.
     rewrite RES. change (Mem.valid_block tm tb). eapply Mem.valid_block_inject_2; eauto.
@@ -784,23 +784,23 @@ Proof.
   exploit Mem.alloc_result; eauto. intros RES.
   assert (LO: Ple lo (Mem.nextblock m1)) by (eapply me_low_high; eauto).
   constructor.
-  xomega.
+  extlia.
   auto.
   eapply match_temps_invariant; eauto.
   eapply match_env_alloc; eauto.
   red; intros. rewrite PTree.gsspec in H. destruct (peq id0 id).
   inversion H. subst b0 sz0 id0. eapply Mem.perm_alloc_3; eauto.
   eapply BOUND0; eauto. eapply Mem.perm_alloc_4; eauto.
-  exploit me_bounded; eauto. unfold block in *; xomega.
+  exploit me_bounded; eauto. unfold block in *; extlia.
   red; intros. exploit PERM; eauto. intros [A|A]. auto. right.
   inv A. apply is_reachable_intro with id0 b0 sz0 delta; auto.
   rewrite PTree.gso. auto. congruence.
   eapply match_callstack_invariant with (m1 := m1); eauto.
   intros. eapply Mem.perm_alloc_4; eauto.
-  unfold block in *; xomega.
-  intros. apply H4. unfold block in *; xomega.
+  unfold block in *; extlia.
+  intros. apply H4. unfold block in *; extlia.
   intros. destruct (eq_block b0 b).
-  subst b0. rewrite H3 in H. inv H. xomegaContradiction.
+  subst b0. rewrite H3 in H. inv H. extlia.
   rewrite H4 in H; auto.
   auto.
 Qed.
@@ -841,7 +841,7 @@ Definition cenv_compat (cenv: compilenv) (vars: list (ident * Z)) (tsz: Z) : Pro
       PTree.get id cenv = Some ofs
    /\ Mem.inj_offset_aligned ofs sz
    /\ 0 <= ofs
-   /\ ofs + Zmax 0 sz <= tsz.
+   /\ ofs + Z.max 0 sz <= tsz.
 
 Definition cenv_separated (cenv: compilenv) (vars: list (ident * Z)) : Prop :=
   forall id1 sz1 ofs1 id2 sz2 ofs2,
@@ -932,7 +932,7 @@ Proof.
     subst b. rewrite C in H5; inv H5.
     exploit SEP1. eapply in_eq. eapply in_cons; eauto. eauto. eauto.
     red; intros; subst id0. elim H3. change id with (fst (id, sz0)). apply in_map; auto.
-    lia.
+	    lia.
     eapply SEP2. apply in_cons; eauto. eauto.
     rewrite D in H5; eauto. eauto. auto.
     intros. rewrite PTree.gso. eapply UNBOUND; eauto with coqlib.
@@ -966,7 +966,6 @@ Proof.
   intros. apply Mem.perm_implies with Freeable; auto with mem. eapply Mem.perm_alloc_2; eauto.
   red; intros. eelim Mem.fresh_block_alloc; eauto.
   eapply Mem.valid_block_inject_2; eauto.
-  intros. apply PTree.gempty.
   eapply match_callstack_alloc_right; eauto.
   intros. destruct (In_dec peq id (map fst vars)).
   apply cenv_remove_gss; auto.
@@ -992,7 +991,7 @@ Remark assign_variable_incr:
 Proof.
   simpl; intros. inv H.
   generalize (align_le stksz (block_alignment sz) (block_alignment_pos sz)).
-  assert (0 <= Zmax 0 sz). apply Zmax_bound_l. lia.
+  assert (0 <= Z.max 0 sz) by apply Z.le_max_l.
   lia.
 Qed.
 
@@ -1005,7 +1004,7 @@ Proof.
 Opaque assign_variable.
   destruct a as [id s]. simpl. intros.
   destruct (assign_variable (cenv, sz) (id, s)) as [cenv1 sz1] eqn:?.
-  apply Zle_trans with sz1. eapply assign_variable_incr; eauto. eauto.
+  apply Z.le_trans with sz1. eapply assign_variable_incr; eauto. eauto.
 Transparent assign_variable.
 Qed.
 
@@ -1014,29 +1013,29 @@ Remark inj_offset_aligned_block:
   Mem.inj_offset_aligned (align stacksize (block_alignment sz)) sz.
 Proof.
   intros; red; intros.
-  apply Zdivides_trans with (block_alignment sz).
+  apply Z.divide_trans with (block_alignment sz).
   unfold align_chunk.  unfold block_alignment.
   generalize Zone_divide; intro.
-  generalize Zdivide_refl; intro.
+  generalize Z.divide_refl; intro.
   assert (2 | 4). exists 2; auto.
   assert (2 | 8). exists 4; auto.
   assert (4 | 8). exists 2; auto.
   destruct (zlt sz 2).
-  destruct chunk; simpl in *; auto; omegaContradiction.
+  destruct chunk; simpl in *; auto; lia.
   destruct (zlt sz 4).
-  destruct chunk; simpl in *; auto; omegaContradiction.
+  destruct chunk; simpl in *; auto; lia.
   destruct (zlt sz 8).
-  destruct chunk; simpl in *; auto; omegaContradiction.
+  destruct chunk; simpl in *; auto; lia.
   destruct chunk; simpl; auto.
   apply align_divides. apply block_alignment_pos.
 Qed.
 
 Remark inj_offset_aligned_block':
   forall stacksize sz,
-  Mem.inj_offset_aligned (align stacksize (block_alignment sz)) (Zmax 0 sz).
+  Mem.inj_offset_aligned (align stacksize (block_alignment sz)) (Z.max 0 sz).
 Proof.
   intros.
-  replace (block_alignment sz) with (block_alignment (Zmax 0 sz)).
+  replace (block_alignment sz) with (block_alignment (Z.max 0 sz)).
   apply inj_offset_aligned_block.
   rewrite Zmax_spec. destruct (zlt sz 0); auto.
   transitivity 1. reflexivity. unfold block_alignment. rewrite zlt_true. auto. lia.
@@ -1067,23 +1066,23 @@ Proof.
   exploit COMPAT; eauto. intros [ofs [A [B [C D]]]].
   exists ofs.
   split. rewrite PTree.gso; auto.
-  split. auto. split. auto. zify; lia.
+  split. auto. split. auto. lia.
   inv P. exists (align sz1 (block_alignment sz)).
   split. apply PTree.gss.
   split. apply inj_offset_aligned_block.
   split. lia.
-  lia.
+	        extlia.
   apply EITHER in H; apply EITHER in H0.
   destruct H as [[P Q] | P]; destruct H0 as [[R S] | R].
   rewrite PTree.gso in *; auto. eapply SEP; eauto.
   inv R. rewrite PTree.gso in H1; auto. rewrite PTree.gss in H2; inv H2.
   exploit COMPAT; eauto. intros [ofs [A [B [C D]]]].
   assert (ofs = ofs1) by congruence. subst ofs.
-  left. zify; lia.
+  left. lia.
   inv P. rewrite PTree.gso in H2; auto. rewrite PTree.gss in H1; inv H1.
   exploit COMPAT; eauto. intros [ofs [A [B [C D]]]].
   assert (ofs = ofs2) by congruence. subst ofs.
-  right. zify; lia.
+  right. lia.
   congruence.
 Qed.
 
@@ -2251,8 +2250,25 @@ Ltac resolvfp:=
   | H: fp_inject inject_id ?fp ?fp'|- FP.subset ?fp' ?fp =>
     apply fp_inject_id_fp_subset
   | H: proper_mu _ _ _ _ |- Injections.FPMatch' _ ?fp ?fp => inv H; eapply fp_match_id; eauto
-  | _ => idtac
-  end.
+	  | _ => idtac
+	  end.
+
+Lemma freelist_free_fpmatch:
+  forall mu f0 e sp tfn
+    (AGMU: proper_mu ge tge f0 mu)
+    (NGE: ~ Plt sp (Genv.genv_next ge)),
+    Injections.FPMatch' mu (FMemOpFP.free_list_fp (blocks_of_env e))
+                        (FMemOpFP.free_fp sp 0 (fn_stackspace tfn)).
+Proof.
+  intros.
+  unfold FMemOpFP.free_fp.
+  constructor; simpl; try apply FMemOpFP.emp_loc_match.
+  unfold FMemOpFP.range_locset. constructor; intros b ofs HTgt Hloc.
+  inv Hloc. inv_eq. unfold Bset.belongsto in HTgt.
+  inv AGMU. inv proper_mu_ge_init_inj.
+  rewrite mu_shared_tgt in HTgt.
+  contradiction.
+Qed.
 
 Ltac eresolvfp:= resolvfp; eauto.
 
@@ -2444,8 +2460,8 @@ Proof.
     rewrite Heqo'.
     destruct f eqn:?;[|inv INITCORE].
     unfold Csharpminor_local.fundef_init in INITCORE.
-    destruct ( val_has_type_list_func args (sig_args (Csharpminor.funsig (Internal f0))) &&  vals_defined args && zlt (4 * (2 * Zlength args)) Int.max_unsigned) eqn:?;inv INITCORE.
-    assert(wd_args args (sig_args (Csharpminor.funsig (Internal f0))) = true).
+	    destruct ( val_has_type_list_func args (proj_sig_args (Csharpminor.funsig (Internal f0))) &&  vals_defined args && zlt (4 * (2 * Zlength args)) Int.max_unsigned) eqn:?;inv INITCORE.
+	    assert(wd_args args (proj_sig_args (Csharpminor.funsig (Internal f0))) = true).
     auto. clear Heqb0.
     unfold fundef_init.
     erewrite sig_preserved;eauto.
@@ -2556,22 +2572,7 @@ Proof.
       econstructor;eauto.
 
       eresolvfp.
-      Lemma freelist_free_fpmatch:
-        forall mu f0 e sp tfn
-          (AGMU: proper_mu ge tge f0 mu)
-          (NGE: ~ Plt sp (Genv.genv_next ge)),
-           Injections.FPMatch' mu (FMemOpFP.free_list_fp (blocks_of_env e))
-                               (FMemOpFP.free_fp sp 0 (fn_stackspace tfn)).
-      Proof.
-        unfold FMemOpFP.free_fp.
-        constructor;simpl;try apply FMemOpFP.emp_loc_match.
-        unfold FMemOpFP.range_locset. constructor;intros.
-        inv H0. inv_eq. unfold Bset.belongsto in H.
-        inv AGMU. inv proper_mu_ge_init_inj.
-        rewrite mu_shared_tgt in H.
-        contradiction.
-      Qed.
-      eapply freelist_free_fpmatch;eauto.
+	      eapply freelist_free_fpmatch;eauto.
       splitMS.
       eapply freelist_free_fpmatch;eauto.
       {
@@ -2592,7 +2593,7 @@ Proof.
         inv MENV.
         apply  match_callstack_ple_ge in MCS0 as ?.
         apply me_bounded0 in H7 as [].
-        xomega.
+        split; [extlia|auto].
       }
       assert(R2:
                forall b lo hi,
@@ -2855,8 +2856,8 @@ Proof.
         inv MCS.
         inv MENV.
         apply  match_callstack_ple_ge in MCS0 as ?.
-        apply me_bounded0 in H3 as [].
-        xomega.
+	        apply me_bounded0 in H3 as [].
+	        split; [extlia|auto].
       }
       assert(R2:
                forall b lo hi,
@@ -2908,7 +2909,7 @@ Proof.
         inv MENV.
         apply  match_callstack_ple_ge in MCS0 as ?.
         apply me_bounded0 in H9 as [].
-        xomega.
+        split; [extlia|auto].
       }
       assert(R2:
                forall b lo hi,
@@ -3093,51 +3094,67 @@ Proof.
     destruct Hcore; try discriminate. destruct f; try discriminate. destruct e;try discriminate.
     invMS. inv MS.
     monadInv TR.
+    assert (Hcore' =
+            Csharpminor_local.Core_Returnstate
+              (match oresSrc with Some v => v | None => Vundef end) k).
+    { destruct oresSrc as [vsrc|]; destruct (sig_res sg) eqn:?; inv AFTEXT; auto;
+        match goal with
+        | H: context[if ?b then _ else _] |- _ =>
+            destruct b; inv H; auto
+        end. }
+    assert (match oresSrc, sig_res sg with
+            | None, Xvoid => True
+            | Some v, Xvoid => False
+            | Some v, ty => Val.has_type v (proj_xtype ty)
+            | None, _ => False
+            end) as HRES.
+    { destruct oresSrc as [vsrc|]; destruct (sig_res sg) eqn:?; inv AFTEXT; auto;
+        match goal with
+        | H: context[if ?b then _ else _] |- _ =>
+            destruct b eqn:HT; inv H; apply val_has_type_funcP in HT; exact HT
+        end. }
+    subst Hcore'.
     exists (match oresTgt with Some v => Core_Returnstate v tk | None => Core_Returnstate Vundef tk end).
     split.
-    inv_eq.
-    inv_eq;auto.
-    rewrite Heqb. auto.
-
-    inv_eq. auto.
-
+    { destruct oresSrc as [vsrc|], oresTgt as [vtgt|], (sig_res sg); try contradiction; auto;
+        simpl in *; try rewrite HRES; auto.
+      inv RESREL; try contradiction; simpl in *; auto.
+      all: match goal with
+      | |- (if val_has_type_func ?v ?ty then _ else _) = _ =>
+          destruct (val_has_type_func v ty) eqn:HT; auto; exfalso;
+          assert (Val.has_type v ty) by
+            (eapply valinject_hastype'; eauto;
+             match goal with
+             | |- ?src <> Vundef =>
+                 unfold LDSimDefs.G_oarg in GRES; destruct src; simpl in *; congruence
+             end);
+          apply val_has_type_funcP in H; congruence
+      end. }
     intros Hm' Lm' [HRELY LRELY INV].
-    exists O. 
-
+    exists O.
     unfold LDSimDefs.ores_rel in RESREL.
-    
-    destruct oresSrc eqn:?;inv AFTEXT; destruct oresTgt eqn:?;try contradiction.
-    {
-      inv_eq.
-     
-      exploit inject_rely;eauto. intro.
+    destruct oresSrc as [vsrc|], oresTgt as [vtgt|]; try contradiction.
+    - exploit inject_rely; eauto. intro.
       splitMS.
-
       inversion HRELY. rewrite EQNEXT.
       inversion LRELY. rewrite EQNEXT0.
-      eapply match_callstack_rely;eauto.
+      eapply match_callstack_rely; eauto.
       apply Ple_refl.
-      inv RESREL;try constructor.   econstructor;eauto.
-      inv AGMU;apply proper_mu_inject_incr in H0;auto.
+      inv RESREL; try constructor. econstructor; eauto.
+      inv AGMU; apply proper_mu_inject_incr in H0; auto.
       intros ? S; apply SVALID in S. unfold Mem.valid_block in *. inv HRELY. rewrite EQNEXT. auto.
-      intros ? T; apply TVALID in T;unfold Mem.valid_block in *;inv LRELY;rewrite EQNEXT;auto.
-
+      intros ? T; apply TVALID in T; unfold Mem.valid_block in *; inv LRELY; rewrite EQNEXT; auto.
       inv LRELY. eapply MemClosures_local.reach_closed_unmapped_closed; eauto.
-    }
-    {
-      inv_eq.
-      exploit inject_rely;eauto. intro.
+    - exploit inject_rely; eauto. intro.
       splitMS.
-
       inversion HRELY. rewrite EQNEXT.
       inversion LRELY. rewrite EQNEXT0.
-      eapply match_callstack_rely;eauto.
+      eapply match_callstack_rely; eauto.
       apply Ple_refl.
       intros ? S; apply SVALID in S. unfold Mem.valid_block in *. inv HRELY. rewrite EQNEXT. auto.
-      intros ? T; apply TVALID in T;unfold Mem.valid_block in *;inv LRELY;rewrite EQNEXT;auto.
+      intros ? T; apply TVALID in T; unfold Mem.valid_block in *; inv LRELY; rewrite EQNEXT; auto.
       inv AGMU.
       inv LRELY. eapply MemClosures_local.reach_closed_unmapped_closed; eauto.
-    }
   }
   { (*halt*)
     simpl.
@@ -3170,4 +3187,3 @@ Proof.
   }
 Qed.
 End TRANSLATION.
-

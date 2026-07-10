@@ -266,11 +266,21 @@ Proof.
   destruct check_value; auto.
 Qed.
 
+Lemma norm_bool_related:
+  forall j v, val_related j (Val.norm_bool v) (Val.norm_bool v).
+Proof.
+  intros. destruct (Val.norm_bool_cases v) as [Hnorm|[Hnorm|Hnorm]];
+    rewrite Hnorm; constructor.
+Qed.
+
 Lemma load_result_related:
   forall j v v' chunk,
     val_related j v v' ->
     val_related j (Val.load_result chunk v) (Val.load_result chunk v').
-Proof. intros. unfold Val.load_result; inv H; destruct chunk; simpl; constructor; auto. Qed.
+Proof.
+  intros. inv H; destruct chunk; simpl; try destruct Archi.ptr64; auto; try constructor.
+  all: try apply norm_bool_related.
+Qed.
 
 Lemma decode_val_related:
   forall j mvl mvl' chunk,
@@ -279,7 +289,7 @@ Lemma decode_val_related:
     val_related j (decode_val chunk mvl) (decode_val chunk mvl').
 Proof.
   intros. unfold decode_val. exploit related_proj_bytes; eauto. intro A. rewrite A.
-  destruct (proj_bytes mvl'). destruct chunk; constructor.
+  destruct (proj_bytes mvl'). destruct chunk; try constructor; apply norm_bool_related.
   destruct chunk; try constructor.
   destruct Archi.ptr64; try constructor.
   1-3: exploit related_proj_value; eauto; intros; eauto using load_result_related.
@@ -393,7 +403,7 @@ Proof.
   Transparent Memory.Mem.loadbytes FMemory.Mem.loadbytes.
   unfold Memory.Mem.loadbytes, FMemory.Mem.loadbytes in *.
   do 2 match goal with H:context[if ?x then _ else _] |- _ => destruct x; inv H end.
-  apply mem_rel_getN; auto. rewrite nat_of_Z_eq; auto. 
+  apply mem_rel_getN; auto. rewrite Z2Nat.id; auto; lia.
 Qed.
   
 Lemma store_related:
