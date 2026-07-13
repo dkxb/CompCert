@@ -453,14 +453,15 @@ Definition after_external (c: core) (vret: option val) : option core :=
     Core_Callstate fd args k =>
     match fd with
     | External (EF_external _ sg)
-      => match vret, sig_res sg with
-          None, None => Some (Core_Returnstate Vundef k)
-        | Some v, Some ty =>
-          if val_has_type_func v ty
-          then Some (Core_Returnstate v k)
-          else None
-        | _, _ => None
-        end
+	      => match vret, sig_res sg with
+	          None, Xvoid => Some (Core_Returnstate Vundef k)
+	        | Some v, Xvoid => None
+	        | Some v, ty =>
+	          if val_has_type_func v (proj_xtype ty)
+	          then Some (Core_Returnstate v k)
+	          else None
+	        | None, _ => None
+	        end
     | _ => None
     end
   | _ => None
@@ -477,7 +478,7 @@ Definition halted (c : core): option val :=
 Definition fundef_init (cfd: fundef) (args: list val) : option core :=
   match cfd with
   | Internal fd =>
-    if wd_args args (sig_args (funsig cfd))
+	    if wd_args args (proj_sig_args (funsig cfd))
     then Some (Core_Callstate cfd args Kstop)
     else None
   | External _=> None
@@ -499,4 +500,3 @@ Definition CminorLang: Language :=
   Build_Language fundef unit genv cminor_comp_unit core 
                  init_core step_gmem at_external after_external halted 
                  CUAST.internal_fn init_genv init_mem.
-

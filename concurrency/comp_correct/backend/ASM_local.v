@@ -1247,10 +1247,10 @@ Definition after_external (c: core) (vret: option val) : option core :=
   match c with
   | Core_CallstateOut (EF_external name sig)  args rs lf => 
    match vret, sig_res sig with
-     None, None =>
+     None, Xvoid =>
      Some (Core_State ((set_pair (loc_external_result sig) Vundef rs) # PC <- (rs RA)) lf)
-   | Some res, Some ty =>
-     if val_has_type_func res ty
+   | Some res, ty =>
+     if val_has_type_func res (proj_xtype ty)
      then Some (Core_State ((set_pair (loc_external_result sig) res rs) # PC <- (rs RA)) lf)
      else None
    | _, _ => None
@@ -1295,4 +1295,3 @@ Definition halted (c : core): option val :=
 Definition Asm_IS :=
   IS_local.Build_sem_local fundef unit genv Asm_comp_unit core init_genv init_mem
                            init_core halted step at_external after_external.
-
