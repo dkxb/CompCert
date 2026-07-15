@@ -1,7 +1,7 @@
 Require Import Coqlib Maps.
 Require Import AST Values.
 Require Import Footprint GMemory InteractionSemantics GAST GlobDefs ETrace Blockset Injections.
-Require Import Coq.Lists.Streams.
+Require Import Stdlib.Streams.Streams.
 
 (** This file defines the global semantics of a program. *)
 

@@ -1,4 +1,4 @@
-Require Import mathcomp.ssreflect.fintype List.
+Require Import mathcomp.boot.fintype List.
 Require Import Coqlib Errors AST.
 Require Import InteractionSemantics.
 

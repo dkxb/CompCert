@@ -9,10 +9,10 @@
    In this file we add additional construct for freelists, thread pool, etc.. *)
 
 Require Import Coqlib Maps.
-Require Import mathcomp.ssreflect.fintype.
+Require Import mathcomp.boot.fintype.
 Require Import AST Values Globalenvs.
 Require Import Blockset GMemory MemClosures MemAux InteractionSemantics GAST Injections.
-Require Import Lists.Streams Lia.
+Require Import Stdlib.Streams.Streams Lia.
 
 (** * Definitions of global runtime states*)
 

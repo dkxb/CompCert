@@ -10,7 +10,7 @@
    Other contents are newly developed.
 *)
 
-Require Import Setoid List Lists.Streams.
+Require Import Setoid List Stdlib.Streams.Streams.
 Require Import Coqlib Errors Values AST Globalenvs.
 Require Import Footprint GMemory MemAux.
 
