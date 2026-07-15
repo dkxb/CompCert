@@ -382,7 +382,7 @@ endif
 latexdoc:
 	cd doc; $(COQDOC) --latex -o doc/doc.tex -g $(FILES)
 
-%.vo: %.v
+%.vo: %.v depend
 	@rm -f doc/$(*F).glob
 	@echo "COQC $*.v"
 	@$(COQC) $*.v
@@ -473,7 +473,7 @@ ifeq ($(INSTALL_COQDEV),true)
 endif
 
 
-clean:
+clean: clean_concur
 	rm -f $(patsubst %, %/*.vo*, $(DIRS))
 	rm -f $(patsubst %, %/.*.aux, $(DIRS))
 	rm -rf $(patsubst %, %/.coq-native, $(DIRS))
