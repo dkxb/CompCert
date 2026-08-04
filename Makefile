@@ -38,31 +38,42 @@ CONCUR_DIRS := \
   concurrency/comp_correct/x86 \
   concurrency/x86TSO concurrency/x86TSO/lock_proof
 
+# DIRS1 are the CompCert folders shared with VST.  Select exactly one physical
+# source tree for them.
+DIRS1_NAMES := lib common $(ARCHDIRS) cfrontend
 ifeq ($(FOR_VST),true)
-compcert_dir = ../compcert/$(1)
+DIRS1 := $(addprefix ../compcert/,$(DIRS1_NAMES))
 else
-compcert_dir = $(1)
+DIRS1 := $(DIRS1_NAMES)
 endif
 
-# DIRS1 are folders that this project has in common with VST/compcert/
-DIRS1 := lib common $(ARCHDIRS) cfrontend
+DIRS2 := backend driver cparser
+ifneq ($(FOR_VST),true)
+DIRS2 += common_cas x86_cas cfrontend_cas
+endif
+ifeq ($(CLIGHTGEN),true)
+DIRS2 += export
+endif
 
-DIRS1 := $(foreach d,$(DIRS1),$(call compcert_dir,$(d)))
-
-DIRS2 := backend driver cparser common_cas x86_cas cfrontend_cas
 DIRS := $(DIRS1) $(DIRS2)
 
-ifeq ($(CLIGHTGEN),true)
-DIRS += export
+ifeq ($(FOR_VST),true)
+COQINCLUDES := $(foreach d,$(DIRS1_NAMES),-R ../compcert/$(d) compcert.$(d))
+else
+COQINCLUDES := $(foreach d,$(DIRS1_NAMES),-R $(d) compcert.$(d))
 endif
-
-COQINCLUDES := $(foreach d, $(DIRS), -R $(d) compcert.$(d))
+COQINCLUDES += $(foreach d,$(DIRS2),-R $(d) compcert.$(d))
 COQINCLUDES += -R concurrency compcert.concurrency
 
 ifeq ($(LIBRARY_FLOCQ),local)
 FLOCQ_DIRS := flocq/Core flocq/Prop flocq/Calc flocq/IEEE754
-DIRS += $(foreach d,$(FLOCQ_DIRS),$(call compcert_dir,$(d)))
-COQINCLUDES += -R $(call compcert_dir,flocq) Flocq
+ifeq ($(FOR_VST),true)
+DIRS += $(addprefix ../compcert/,$(FLOCQ_DIRS))
+COQINCLUDES += -R ../compcert/flocq Flocq
+else
+DIRS += $(FLOCQ_DIRS)
+COQINCLUDES += -R flocq Flocq
+endif
 endif
 
 ifeq ($(LIBRARY_MENHIRLIB),local)
@@ -302,11 +313,22 @@ FILES=$(VLIB) $(COMMON) $(BACKEND) $(CFRONTEND) $(DRIVER) $(FLOCQ) \
 # Generated source files
 
 GENERATED_ARCH=$(if $(filter x86,$(ARCH)),$(ARCH)_cas,$(ARCH))
+GENERATED_ARCH_SOURCES=\
+  $(GENERATED_ARCH)/ConstpropOp.v $(GENERATED_ARCH)/SelectOp.v $(GENERATED_ARCH)/SelectLong.v
 
 GENERATED=\
-  $(GENERATED_ARCH)/ConstpropOp.v $(GENERATED_ARCH)/SelectOp.v $(GENERATED_ARCH)/SelectLong.v \
+  $(GENERATED_ARCH_SOURCES) \
   backend/SelectDiv.v backend/SplitLong.v \
   cparser/Parser.v
+
+# The architecture-specific generated sources live in *_cas for x86.  They
+# are not part of the FOR_VST load path, so do not feed them to coqdep in that
+# mode.  Keep the DIRS2 generated sources because they remain visible.
+ifeq ($(FOR_VST),true)
+DEPEND_GENERATED := $(filter-out $(GENERATED_ARCH_SOURCES),$(GENERATED))
+else
+DEPEND_GENERATED := $(GENERATED)
+endif
 
 # Build targets for file categories
 
@@ -456,7 +478,9 @@ cparser/Parser.v: cparser/Parser.vy
 
 depend : .depend
 
-DEPEND_SOURCES := $(foreach f,$(FILES),$(firstword $(wildcard $(addsuffix /$(f),$(DIRS) $(CONCUR_DIRS)))))
+# find the first file that matches the given name in all search paths
+find_source = $(firstword $(foreach d,$(DIRS) $(CONCUR_DIRS),$(wildcard $(d)/$(1))))
+DEPEND_SOURCES := $(foreach f,$(FILES),$(call find_source,$(f)))
 
 .depend: $(GENERATED) $(DEPEND_SOURCES) Makefile
 	@echo "Analyzing Coq dependencies"
