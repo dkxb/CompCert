@@ -454,11 +454,14 @@ cparser/Parser.v: cparser/Parser.vy
 	$(MENHIR) --coq --coq-no-version-check cparser/Parser.vy
 	@chmod a-w $@
 
-depend: $(GENERATED) depend1
+depend : .depend
 
-depend1: $(FILES)
+DEPEND_SOURCES := $(foreach f,$(FILES),$(firstword $(wildcard $(addsuffix /$(f),$(DIRS) $(CONCUR_DIRS)))))
+
+.depend: $(GENERATED) $(DEPEND_SOURCES) Makefile
 	@echo "Analyzing Coq dependencies"
-	@$(COQDEP) $^ > .depend
+	@$(COQDEP) $(filter %.v,$^) > $@.tmp
+	@mv $@.tmp $@
 
 install:
 	install -d $(DESTDIR)$(BINDIR)
