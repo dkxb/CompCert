@@ -38,7 +38,19 @@ CONCUR_DIRS := \
   concurrency/comp_correct/x86 \
   concurrency/x86TSO concurrency/x86TSO/lock_proof
 
-DIRS := lib common $(ARCHDIRS) backend cfrontend driver cparser
+ifeq ($(FOR_VST),true)
+compcert_dir = ../compcert/$(1)
+else
+compcert_dir = $(1)
+endif
+
+# DIRS1 are folders that this project has in common with VST/compcert/
+DIRS1 := lib common $(ARCHDIRS) cfrontend
+
+DIRS1 := $(foreach d,$(DIRS1),$(call compcert_dir,$(d)))
+
+DIRS2 := backend driver cparser common_cas x86_cas cfrontend_cas
+DIRS := $(DIRS1) $(DIRS2)
 
 ifeq ($(CLIGHTGEN),true)
 DIRS += export
@@ -48,8 +60,9 @@ COQINCLUDES := $(foreach d, $(DIRS), -R $(d) compcert.$(d))
 COQINCLUDES += -R concurrency compcert.concurrency
 
 ifeq ($(LIBRARY_FLOCQ),local)
-DIRS += flocq/Core flocq/Prop flocq/Calc flocq/IEEE754
-COQINCLUDES += -R flocq Flocq
+FLOCQ_DIRS := flocq/Core flocq/Prop flocq/Calc flocq/IEEE754
+DIRS += $(foreach d,$(FLOCQ_DIRS),$(call compcert_dir,$(d)))
+COQINCLUDES += -R $(call compcert_dir,flocq) Flocq
 endif
 
 ifeq ($(LIBRARY_MENHIRLIB),local)
@@ -288,14 +301,16 @@ FILES=$(VLIB) $(COMMON) $(BACKEND) $(CFRONTEND) $(DRIVER) $(FLOCQ) \
 
 # Generated source files
 
+GENERATED_ARCH=$(if $(filter x86,$(ARCH)),$(ARCH)_cas,$(ARCH))
+
 GENERATED=\
-  $(ARCH)/ConstpropOp.v $(ARCH)/SelectOp.v $(ARCH)/SelectLong.v \
+  $(GENERATED_ARCH)/ConstpropOp.v $(GENERATED_ARCH)/SelectOp.v $(GENERATED_ARCH)/SelectLong.v \
   backend/SelectDiv.v backend/SplitLong.v \
   cparser/Parser.v
 
 # Build targets for file categories
 
-.PHONY: common backend cfrontend
+.PHONY: common backend cfrontend cfrontend_cas common_cas x86_cas
 
 common: $(COMMON:.v=.vo)
 
