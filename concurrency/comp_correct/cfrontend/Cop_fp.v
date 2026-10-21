@@ -323,6 +323,9 @@ Proof.
   match goal with H: context[if ?x then _ else _] |- _ => destruct x eqn:?; inv H end.
   eexists; split; [eauto|].
   eapply weak_valid_inj_fp_mapped; eauto.
+  (* Only left open when Archi.ptr64 = true. *)
+  all: try (destruct (Mem.weak_valid_pointer m b1 (Ptrofs.unsigned ofs1));
+            congruence).
 Qed.
 
 (** ** Unary operators *)
@@ -956,58 +959,28 @@ Proof.
       try (eexists; split; [eauto|eapply emp_fp_mapped]; fail);
       destruct Archi.ptr64; try discriminate;
         try (clear; eexists; split; [eauto|eapply emp_fp_mapped]; fail).
-  
-  destruct Int.eq, Val.cmp_different_blocks; try discriminate. inv FP.
-  eexists; split; eauto. eapply weak_valid_inj_fp_mapped; eauto.
-  unfold Mem.weak_valid_pointer. simpl in CMP.
-  match goal with |- ?x = true => destruct x; try discriminate end; auto.
-
-  destruct Int.eq, Val.cmp_different_blocks; try discriminate. inv FP.
-  eexists; split; eauto. eapply weak_valid_inj_fp_mapped; eauto.
-  unfold Mem.weak_valid_pointer. simpl in CMP.
-  match goal with |- ?x = true => destruct x; try discriminate end; auto.
-
-  destruct (eq_block b b0); subst.
-  * rewrite H1 in H2; inv H2. inv FP. destruct eq_block; [|congruence]. eexists; split; eauto.
-    apply fp_mapped_union; eapply weak_valid_inj_fp_mapped; eauto;
-      unfold Mem.weak_valid_pointer; simpl in CMP; match goal with |- ?x = true => destruct x; try discriminate end; auto.
-    rewrite andb_false_r in CMP. inv CMP.
-  * destruct (eq_block b2 b3); subst.
-    ** destruct Val.cmp_different_blocks; try discriminate. inv FP.
-       eexists. split; eauto. unfold weak_valid_pointer_fp.
-       match goal with 
-         H: context[if ?x then _ else _] |- _ =>
-         destruct x eqn:VALID; simpl in H; inv H
-       end.
-       rewrite andb_true_iff in VALID. destruct VALID as [VALID VALID0].
-       exploit Mem.valid_pointer_inject; try eapply VALID; eauto.
-       exploit Mem.valid_pointer_inject; try eapply VALID0; eauto.
-       intros. unfold Ptrofs.add. repeat rewrite Ptrofs.unsigned_repr. rewrite H, H0.
-       apply fp_mapped_union; unfold valid_pointer_fp;
-         constructor; simpl; try apply emp_locs_mapped.
-       constructor; intros.
-       rewrite range_locset_loc in H3. inv H3.
-       apply Loc_Mapped with b (tofs - delta) delta; [|auto|lia].
-       apply range_locset_loc. intuition.
-       constructor; intros.
-       rewrite range_locset_loc in H3. inv H3.
-       apply Loc_Mapped with b0 (tofs - delta0) delta0; [|auto|lia].
-       apply range_locset_loc. intuition.
-
-       1-3: clear VALID H1 H0 i. 4-6: clear VALID0 H2 H i0.
-       1-6: (exploit Mem.valid_pointer_inject_no_overflow; eauto;
-             exploit Mem.mi_representable; eauto;
-             try rewrite Mem.valid_pointer_nonempty_perm in *; eauto with mem;
-             intros; try destruct i0; try destruct i; simpl in *; try lia).
-
-    ** destruct Val.cmp_different_blocks; try discriminate. inv FP.
-       eexists. split; auto.
-       match goal with 
-         H: context[if ?x then _ else _] |- _ =>
-         destruct x eqn:VALID; simpl in H; inv H
-       end.
-       rewrite andb_true_iff in VALID. destruct VALID.
-       apply fp_mapped_union; eapply valid_pointer_inj_fp_mapped; eauto.
+  (* Pointer comparisons remain only when Archi.ptr64 = false. *)
+  all:
+    repeat match goal with
+    | |- context[if ?x then _ else _] =>
+        destruct x eqn:?; subst; simpl in *; try discriminate
+    | |- context[match ?x with _ => _ end] =>
+        destruct x eqn:?; subst; simpl in *; try discriminate
+    | H: context[if ?x then _ else _] |- _ =>
+        destruct x eqn:?; subst; simpl in *; try discriminate
+    | H: _ && _ = true |- _ =>
+        apply andb_true_iff in H; destruct H
+    end;
+    try congruence; inv FP;
+      (eexists; split; [eauto|try eapply emp_fp_mapped]);
+      try match goal with
+          | |- context[fp_mapped _ (FP.union _ _) _] =>
+              apply fp_mapped_union
+          end;
+      try (eapply weak_valid_inj_fp_mapped; eauto);
+      try (eapply weak_valid_inj_valid_fp_mapped; eauto);
+      try (eapply valid_inj_weak_valid_fp_mapped; eauto);
+      try (eapply valid_pointer_inj_fp_mapped; eauto).
 Qed.
 
 (** This lemma is wierd. Interesting cases are discriminated because Archi.ptr64 = false *)
@@ -1027,11 +1000,55 @@ Proof.
     destruct v2; inv VINJ2; try discriminate; 
       try (eexists; split; [eauto|eapply emp_fp_mapped]; fail);
       try (clear; eexists; split; [eauto|eapply emp_fp_mapped]; fail).
+  all:
+    repeat match goal with
+    | |- context[if ?x then _ else _] =>
+        destruct x eqn:?; subst; simpl in *; try discriminate
+    | |- context[match ?x with _ => _ end] =>
+        destruct x eqn:?; subst; simpl in *; try discriminate
+    | H: context[if ?x then _ else _] |- _ =>
+        destruct x eqn:?; subst; simpl in *; try discriminate
+    | H: _ && _ = true |- _ =>
+        apply andb_true_iff in H; destruct H
+    end;
+    try congruence; inv FP;
+      (eexists; split; [eauto|try eapply emp_fp_mapped]);
+      try match goal with
+          | |- context[fp_mapped _ (FP.union _ _) _] =>
+              apply fp_mapped_union
+          end;
+      try (eapply weak_valid_inj_fp_mapped; eauto);
+      try (eapply weak_valid_inj_valid_fp_mapped; eauto);
+      try (eapply valid_inj_weak_valid_fp_mapped; eauto);
+      try (eapply valid_pointer_inj_fp_mapped; eauto).
 Qed.
   
 Definition cmp_ptr_fp (m: mem) (c: comparison) (v1 v2: val) : option footprint :=
   if Archi.ptr64 then cmplu_bool_fp m c v1 v2
   else cmpu_bool_fp m c v1 v2.
+
+Lemma cmp_ptr_inj_fp_mapped:
+  forall f m tm v1 tv1 v2 tv2 c v fp,
+    Mem.inject f m tm ->
+    Val.inject f v1 tv1 ->
+    Val.inject f v2 tv2 ->
+    cmp_ptr m c v1 v2 = Some v ->
+    cmp_ptr_fp m c v1 v2 = Some fp ->
+    exists tfp,
+      cmp_ptr_fp tm c tv1 tv2 = Some tfp /\ fp_mapped f fp tfp.
+Proof.
+  intros f m tm v1 tv1 v2 tv2 c v fp Hmem Hv1 Hv2 Hcmp Hfp.
+  unfold cmp_ptr, cmp_ptr_fp in *.
+  destruct Archi.ptr64 eqn:Hptr.
+  - destruct (Val.cmplu_bool (Mem.valid_pointer m) c v1 v2)
+      eqn:Hbool; simpl in Hcmp; try discriminate;
+      inversion Hcmp; subst;
+      eapply complu_bool_fp_inject_mapped; eauto.
+  - destruct (Val.cmpu_bool (Mem.valid_pointer m) c v1 v2)
+      eqn:Hbool; simpl in Hcmp; try discriminate;
+      inversion Hcmp; subst;
+      eapply compu_bool_fp_inject_mapped; eauto.
+Qed.
 
 (* END *)
 
@@ -1089,7 +1106,8 @@ Proof.
          | H: match ?x with _ => _ end = Some _ |- _ => destruct x eqn:?
          end;
   try discriminate;
-  try (eapply cmpu_bool_cmpu_bool_fp; eauto).
+  try (eapply cmpu_bool_cmpu_bool_fp; eauto);
+  try (eapply cmplu_bool_cmplu_bool_fp; eauto).
   eapply sem_binarith_sem_binarith_fp; eauto.
 Qed.
 
@@ -1127,25 +1145,37 @@ Lemma sem_cmp_inj_fp_mapped:
 Proof.
   intros until fp.
   intros MEMINJ VALINJ1 VALINJ2 CMP CMPFP.
-  destruct Archi.ptr64 eqn:PTR64; try discriminate.
-  unfold sem_cmp, sem_cmp_fp, cmp_ptr, cmp_ptr_fp, Val.cmpu_bool, cmpu_bool_fp, Vptrofs in *; try rewrite PTR64 in *.
-  destruct (classify_cmp ty1 ty2); try discriminate;
-    match goal with
-    | |- context[sem_binarith_fp] => BINARITH
-    | _ =>
-      destruct v1; inv VALINJ1; try discriminate;
-        destruct v2; inv VALINJ2; try discriminate;
-          try (clear; eexists; split; [eauto|eapply emp_fp_mapped]; fail);
-          BRANCHES; try congruence; inv CMPFP;
-            (eexists; split; [eauto|try eapply emp_fp_mapped]);
-            try match goal with
-                | |- context[fp_mapped _ (FP.union _ _) _] => apply fp_mapped_union
-                end;
-            try (eapply weak_valid_inj_fp_mapped; eauto);
-            try (eapply weak_valid_inj_valid_fp_mapped; eauto);
-            try (eapply valid_inj_weak_valid_fp_mapped; eauto);
-            try (eapply valid_pointer_inj_fp_mapped; eauto)
+  unfold sem_cmp, sem_cmp_fp in *.
+  destruct (classify_cmp ty1 ty2).
+  - match type of CMP with
+    | cmp_ptr m c ?sv1 ?sv2 = Some v =>
+        eapply (cmp_ptr_inj_fp_mapped f m tm sv1 _ sv2 _ c v fp); eauto
     end.
+  - destruct v2; destruct tv2; inv VALINJ2; simpl in *; try discriminate;
+      try (destruct Archi.ptr64 eqn:?; simpl in *; try discriminate);
+      match type of CMP with
+      | cmp_ptr m c ?sv1 ?sv2 = Some v =>
+          eapply (cmp_ptr_inj_fp_mapped f m tm sv1 _ sv2 _ c v fp); eauto
+      end.
+  - destruct v1; destruct tv1; inv VALINJ1; simpl in *; try discriminate;
+      try (destruct Archi.ptr64 eqn:?; simpl in *; try discriminate);
+      match type of CMP with
+      | cmp_ptr m c ?sv1 ?sv2 = Some v =>
+          eapply (cmp_ptr_inj_fp_mapped f m tm sv1 _ sv2 _ c v fp); eauto
+      end.
+  - destruct v2; destruct tv2; inv VALINJ2; simpl in *; try discriminate;
+      try (destruct Archi.ptr64 eqn:?; simpl in *; try discriminate);
+      match type of CMP with
+      | cmp_ptr m c ?sv1 ?sv2 = Some v =>
+          eapply (cmp_ptr_inj_fp_mapped f m tm sv1 _ sv2 _ c v fp); eauto
+      end.
+  - destruct v1; destruct tv1; inv VALINJ1; simpl in *; try discriminate;
+      try (destruct Archi.ptr64 eqn:?; simpl in *; try discriminate);
+      match type of CMP with
+      | cmp_ptr m c ?sv1 ?sv2 = Some v =>
+          eapply (cmp_ptr_inj_fp_mapped f m tm sv1 _ sv2 _ c v fp); eauto
+      end.
+  - BINARITH.
 Qed.
 
 (** * Combined semantics of unary and binary operators *)

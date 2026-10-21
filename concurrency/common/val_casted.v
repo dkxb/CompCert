@@ -57,17 +57,14 @@ Proof.
            | [|- _ = true] => inv H
            end
      | inversion H; try constructor; auto ]).
-  rewrite H2. destruct Int.eq_dec; auto.
-  destruct Int.eq_dec; auto. discriminate.
-  auto with bool.
-  auto with bool.
-  auto.
-  destruct f0. discriminate. constructor.
-  auto.
-  destruct f0. constructor. discriminate.
-  auto with bool.
-  destruct i0; try discriminate. constructor; auto with bool.
-  auto.
+  (* The remaining goals depend on Archi.ptr64, so do not rely on their order. *)
+  all: try solve
+    [ rewrite H2; destruct Int.eq_dec; auto
+    | destruct Int.eq_dec; auto; discriminate
+    | auto with bool
+    | destruct f0; [discriminate | constructor]
+    | destruct f0; [constructor | discriminate]
+    | destruct i0; try discriminate; constructor; auto with bool ].
 Qed.
 
 (** val_casted for value list *)

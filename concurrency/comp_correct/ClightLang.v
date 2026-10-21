@@ -23,7 +23,7 @@ Require Import Integers Floats Values AST Events Globalenvs Smallstep Ctypes Cop
 
 Require Import CUAST Footprint GMemory MemAux FMemory InteractionSemantics.
 
-Require Import FMemOpFP FCop Cop_fp val_casted.
+Require Import FMemOpFP FCop Cop_fp clight_val_casted.
 
 Require GAST.
 

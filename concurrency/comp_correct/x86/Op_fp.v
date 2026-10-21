@@ -58,18 +58,9 @@ Lemma eval_condition_fp_negate:
     eval_condition_fp (negate_condition cond) vl m = Some fp.
 Proof.
   clear. destruct cond; simpl; do 2 (destruct vl; auto); try (destruct vl; auto); intro m.
-  destruct c, v, v0; auto.
-  destruct c, v, v0; auto.
-  destruct c, v; auto.
-  destruct c, v; auto.
-  destruct c, v, v0; auto.
-  destruct c, v; auto.
-  destruct c, v, v0; auto.
-  destruct c, v, v0; auto.
-  destruct c, v, v0; auto.
-  destruct c, v, v0; auto.
-  destruct (Val.maskzero_bool v n); auto.
-  destruct (Val.maskzero_bool v n); auto.
+  (* The comparison footprints unfold differently depending on Archi.ptr64. *)
+  all: try (destruct c; repeat match goal with v: val |- _ => destruct v end; auto).
+  all: try (destruct (Val.maskzero_bool _ _); auto).
 Qed.
 
   

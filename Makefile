@@ -38,22 +38,54 @@ CONCUR_DIRS := \
   concurrency/comp_correct/x86 \
   concurrency/x86TSO concurrency/x86TSO/lock_proof
 
-DIRS := lib common $(ARCHDIRS) backend cfrontend driver cparser
+# DIRS1 are the CompCert folders shared with VST.  Every Coq file in them is
+# identical to the copy in VST/compcert (upstream CompCert 3.17), so when this
+# repository is built as part of VST (FOR_VST=true) we use VST's copies and
+# share their .vo files.
+DIRS1_NAMES := lib common $(ARCHDIRS) cfrontend
+ifeq ($(FOR_VST),true)
+SHARED_ROOT := ../compcert/
+else
+SHARED_ROOT :=
+endif
+DIRS1 := $(addprefix $(SHARED_ROOT),$(DIRS1_NAMES))
 
+# CASCompCert-only files of the x86 port and of the C front-end.  VST/compcert
+# does not have them, so they live in separate folders, but they are mapped to
+# the standard logical paths compcert.x86 and compcert.cfrontend.  No file name
+# may appear both here and in the corresponding DIRS1 folder.
+CAS_ARCH_DIR := $(if $(filter x86,$(ARCH)),$(ARCH)_cas)
+CAS_DIRS := $(CAS_ARCH_DIR) cfrontend_cas
+
+DIRS2 := backend driver cparser
 ifeq ($(CLIGHTGEN),true)
-DIRS += export
+DIRS2 += export
 endif
 
-COQINCLUDES := $(foreach d, $(DIRS), -R $(d) compcert.$(d))
+DIRS := $(DIRS1) $(CAS_DIRS) $(DIRS2)
+# Folders whose build products belong to this repository.
+LOCAL_DIRS := $(CAS_DIRS) $(DIRS2) $(if $(SHARED_ROOT),,$(DIRS1))
+
+COQINCLUDES := $(foreach d,$(DIRS1_NAMES),-R $(SHARED_ROOT)$(d) compcert.$(d))
+ifneq ($(CAS_ARCH_DIR),)
+COQINCLUDES += -R $(CAS_ARCH_DIR) compcert.$(ARCH)
+endif
+COQINCLUDES += -R cfrontend_cas compcert.cfrontend
+COQINCLUDES += $(foreach d,$(DIRS2),-R $(d) compcert.$(d))
 COQINCLUDES += -R concurrency compcert.concurrency
 
 ifeq ($(LIBRARY_FLOCQ),local)
-DIRS += flocq/Core flocq/Prop flocq/Calc flocq/IEEE754
-COQINCLUDES += -R flocq Flocq
+FLOCQ_DIRS := flocq/Core flocq/Prop flocq/Calc flocq/IEEE754
+DIRS += $(addprefix $(SHARED_ROOT),$(FLOCQ_DIRS))
+COQINCLUDES += -R $(SHARED_ROOT)flocq Flocq
+ifeq ($(SHARED_ROOT),)
+LOCAL_DIRS += $(FLOCQ_DIRS)
+endif
 endif
 
 ifeq ($(LIBRARY_MENHIRLIB),local)
 DIRS += MenhirLib
+LOCAL_DIRS += MenhirLib
 COQINCLUDES += -R MenhirLib MenhirLib
 endif
 
@@ -148,7 +180,8 @@ GPATH=$(DIRS) $(CONCUR_DIRS)
 
 CCOMMON =\
   Memperm.v Blockset.v GMemory.v Footprint.v InteractionSemantics.v         \
-  Injections.v MemClosures.v GAST.v LDSimDefs.v GlobDefs.v ETrace.v         \
+  Injections.v MemClosures.v GAST.v clight_val_casted.v LDSimDefs.v         \
+  GlobDefs.v ETrace.v                                                       \
   GlobSemantics.v DRF.v ReachClose.v SeqCorrect.v LDSim.v ListDom.v\
   FMemPerm.v FMemory.v FMemOpFP.v FMemtype.v MemAux.v GlobSemantics_Lemmas.v FMemLemmas.v
 
@@ -288,8 +321,10 @@ FILES=$(VLIB) $(COMMON) $(BACKEND) $(CFRONTEND) $(DRIVER) $(FLOCQ) \
 
 # Generated source files
 
+GENERATED_ARCH=$(or $(CAS_ARCH_DIR),$(ARCH))
+
 GENERATED=\
-  $(ARCH)/ConstpropOp.v $(ARCH)/SelectOp.v $(ARCH)/SelectLong.v \
+  $(GENERATED_ARCH)/ConstpropOp.v $(GENERATED_ARCH)/SelectOp.v $(GENERATED_ARCH)/SelectLong.v \
   backend/SelectDiv.v backend/SplitLong.v \
   cparser/Parser.v
 
@@ -382,7 +417,7 @@ endif
 latexdoc:
 	cd doc; $(COQDOC) --latex -o doc/doc.tex -g $(FILES)
 
-%.vo: %.v depend
+%.vo: %.v | .depend
 	@rm -f doc/$(*F).glob
 	@echo "COQC $*.v"
 	@$(COQC) $*.v
@@ -439,11 +474,17 @@ cparser/Parser.v: cparser/Parser.vy
 	$(MENHIR) --coq --coq-no-version-check cparser/Parser.vy
 	@chmod a-w $@
 
-depend: $(GENERATED) depend1
+depend : .depend
 
-depend1: $(FILES)
+# Analyze every source on the load path, not only those listed in FILES:
+# concurrency/ and driver/ need back-end passes outside the trimmed BACKEND
+# list, and a .vo without a .depend entry gets compiled before its imports.
+DEPEND_SOURCES := $(sort $(foreach d,$(DIRS),$(wildcard $(d)/*.v)) $(CONCUR))
+
+.depend: $(GENERATED) $(DEPEND_SOURCES) Makefile
 	@echo "Analyzing Coq dependencies"
-	@$(COQDEP) $^ > .depend
+	@$(COQDEP) $(filter %.v,$^) > $@.tmp
+	@mv $@.tmp $@
 
 install:
 	install -d $(DESTDIR)$(BINDIR)
@@ -473,11 +514,12 @@ ifeq ($(INSTALL_COQDEV),true)
 endif
 
 
+# With FOR_VST=true, never remove build products from VST's ../compcert.
 clean: clean_concur
-	rm -f $(patsubst %, %/*.vo*, $(DIRS))
-	rm -f $(patsubst %, %/.*.aux, $(DIRS))
-	rm -rf $(patsubst %, %/.coq-native, $(DIRS))
-	rm -f $(patsubst %, %/*.glob, $(DIRS))
+	rm -f $(patsubst %, %/*.vo*, $(LOCAL_DIRS))
+	rm -f $(patsubst %, %/.*.aux, $(LOCAL_DIRS))
+	rm -rf $(patsubst %, %/.coq-native, $(LOCAL_DIRS))
+	rm -f $(patsubst %, %/*.glob, $(LOCAL_DIRS))
 	rm -rf doc/html
 	rm -f driver/Version.ml
 	rm -f compcert.ini compcert.config

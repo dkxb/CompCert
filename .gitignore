@@ -39,6 +39,9 @@
 /x86/ConstpropOp.v
 /x86/SelectOp.v
 /x86/SelectLong.v
+/x86_cas/ConstpropOp.v
+/x86_cas/SelectOp.v
+/x86_cas/SelectLong.v
 /powerpc/ConstpropOp.v
 /powerpc/SelectOp.v
 /powerpc/SelectLong.v

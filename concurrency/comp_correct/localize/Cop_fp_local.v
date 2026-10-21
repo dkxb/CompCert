@@ -746,7 +746,8 @@ Proof.
          | H: match ?x with _ => _ end = Some _ |- _ => destruct x eqn:?
          end;
   try discriminate;
-  try (eapply cmpu_bool_cmpu_bool_fp; eauto).
+  try (eapply cmpu_bool_cmpu_bool_fp; eauto);
+  try (eapply cmplu_bool_cmplu_bool_fp; eauto).
   eapply sem_binarith_sem_binarith_fp; eauto.
 Qed.
 

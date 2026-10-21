@@ -30,6 +30,10 @@ Qed.
 Lemma dom_length: forall B, length (dom B) = (Pos.to_nat B - 1)%nat.
 Proof. intro. unfold dom. rewrite map_length, seq_length; auto. Qed.
 
+(* Removed from the Rocq 9 standard library. *)
+Local Lemma minus_plus: forall n m, (n + m - n = m)%nat.
+Proof. intros; lia. Qed.
+
 Lemma dom_correct: forall B b, Plt b B <-> In b (dom B).
 Proof.
   intros. split; intros.

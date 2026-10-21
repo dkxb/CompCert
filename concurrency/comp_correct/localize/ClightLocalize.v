@@ -1064,7 +1064,7 @@ Section SEM_EXPR.
       forall ty fm',
         ClightLang.assign_loc sge ty fm loc ofs v fm'->
         exists m',
-          Clight.assign_loc tge ty m loc' ofs' Full v' m' /\ mem_related j bound fl (strip fm') m'.
+          Clight_local.assign_loc tge ty m loc' ofs' Full v' m' /\ mem_related j bound fl (strip fm') m'.
   Proof.
     intros.
     inv H1. 

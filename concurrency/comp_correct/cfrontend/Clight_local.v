@@ -19,7 +19,7 @@
 Require Import Coqlib Errors Maps String.
 Require Import Integers Floats Values AST Events Globalenvs Smallstep Ctypes Cop Clight.
 Require Import Memory Footprint IS_local MemOpFP Cop_fp_local. 
-Require Import val_casted.
+Require Import clight_val_casted.
 
 Require ClightLang GAST.
 
@@ -87,25 +87,39 @@ Proof.
 Qed.
 
 (** [assign_loc] *)
+
+(** CASCompCert supports only assignments by value (see
+    [ClightLang.assign_loc]).  CompCert's [Clight.assign_loc] also has struct
+    copies and bit-field stores; instead of removing them from [Clight.v], the
+    local semantics uses this restricted relation, which is the by-value case
+    of [Clight.assign_loc]. *)
+Inductive assign_loc (ce: composite_env) (ty: type) (m: mem) (b: block) (ofs: ptrofs):
+                                            bitfield -> val -> mem -> Prop :=
+  | assign_loc_value: forall v chunk m',
+      access_mode ty = By_value chunk ->
+      Mem.storev chunk m (Vptr b ofs) v = Some m' ->
+      assign_loc ce ty m b ofs Full v m'.
+
+Lemma assign_loc_clight:
+  forall ce ty m b ofs bf v m',
+    assign_loc ce ty m b ofs bf v m' ->
+    Clight.assign_loc ce ty m b ofs bf v m'.
+Proof.
+  destruct 1. eapply Clight.assign_loc_value; eauto.
+Qed.
+
 Inductive assign_loc_fp (ce:composite_env) ty b ofs : val -> footprint -> Prop :=
   | assign_loc_value_fp: forall v chunk fp,
       access_mode ty = By_value chunk ->
       storev_fp chunk (Vptr b ofs) = fp ->
       assign_loc_fp ce ty b ofs v fp.
-(*  | assign_loc_copy_fp: forall b' ofs' fp_load fp_store fp,
-      access_mode ty = By_copy ->
-      loadbytes_fp b' (Ptrofs.unsigned ofs') (sizeof ce ty) = fp_load ->
-      storebytes_fp b (Ptrofs.unsigned ofs) (sizeof ce ty) = fp_store ->
-      FP.union fp_load fp_store = fp ->
-      assign_loc_fp ce ty b ofs (Vptr b' ofs') fp.*)
+
 Lemma assign_loc_fp_exists:
   forall ce ty m b ofs v m',
     assign_loc ce ty m b ofs Full v m' ->
     exists fp, assign_loc_fp ce ty b ofs v fp.
 Proof.
-  induction 1.
-  eexists. econstructor; eauto; fail.
-(*  eexists. econstructor; eauto; fail.*)
+  destruct 1. eexists. econstructor; eauto.
 Qed.
 
 
@@ -142,10 +156,18 @@ Proof.
   eexists. econstructor; eauto.
 Qed.
 
-(** [bind_parameters] *)
-Local Notation bind_parameters := (bind_parameters ge).
-Local Notation bind_parameters_nil := (bind_parameters_nil ge).
-Local Notation bind_parameters_cons := (bind_parameters_cons ge).
+(** [bind_parameters], as in [Clight] but with the restricted [assign_loc] *)
+Inductive bind_parameters (e: env):
+                           mem -> list (ident * type) -> list val -> mem -> Prop :=
+  | bind_parameters_nil:
+      forall m,
+      bind_parameters e m nil nil m
+  | bind_parameters_cons:
+      forall m id ty params v1 vl b m1 m2,
+      PTree.get id e = Some(b, ty) ->
+      assign_loc ge ty m b Ptrofs.zero Full v1 m1 ->
+      bind_parameters e m1 params vl m2 ->
+      bind_parameters e m ((id, ty) :: params) (v1 :: vl) m2.
 
 Inductive bind_parameters_fp (e: env) :
   list (ident * type) -> list val -> footprint -> Prop :=
